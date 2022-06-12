@@ -10,7 +10,7 @@ fn main() {
     App::new()
 		.insert_resource(WindowDescriptor {
 			title: String::from("Miner Pitfall!"),
-			width: 1080.,
+			width: 1280.,
 			height: 720.,
 			present_mode: PresentMode::Fifo,
 			..default()
@@ -35,6 +35,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 			..default()
 		})
 		.insert(PopupTimer(Timer::from_seconds(3., false)));
+	commands
+		.spawn_bundle(SpriteBundle {
+			texture: asset_server.load("landincredits.png"),
+			transform: Transform::from_xyz(0., 0., -1.),
+			..default()
+		})
+		.insert(PopupTimer(Timer::from_seconds(6., false)));
 
 	info!("Hello world!");
 }
