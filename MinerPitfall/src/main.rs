@@ -41,7 +41,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 			transform: Transform::from_xyz(0., 0., -1.),
 			..default()
 		})
-		.insert(PopupTimer(Timer::from_seconds(6., false)));
+		.insert(PopupTimer(Timer::from_seconds(15., false)));
 
 	info!("Hello world!");
 }
