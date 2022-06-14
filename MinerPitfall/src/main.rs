@@ -32,7 +32,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands
 		.spawn_bundle(SpriteBundle {
 			texture: asset_server.load("justinCredits.png"),
-			transform: Transform::from_xyz(0., 0., -7.),
+			transform: Transform::from_xyz(0., 0., -1.),
 			..default()
 		})
 		.insert(PopupTimer(Timer::from_seconds(3., false)));
@@ -41,7 +41,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands
 	.spawn_bundle(SpriteBundle {
 		texture: asset_server.load("NaraEndCredit.png"),
-		transform: Transform::from_xyz(0., 0., -6.),
+		transform: Transform::from_xyz(0., 0., -1.),
 		..default()
 	})
 	.insert(PopupTimer(Timer::from_seconds(6., false)));
@@ -49,7 +49,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands
 	.spawn_bundle(SpriteBundle {
 		texture: asset_server.load("yinuo-credit r.png"),
-		transform: Transform::from_xyz(0., 0., -6.),
+		transform: Transform::from_xyz(0., 0., -1.),
 		..default()
 	})
 	.insert(PopupTimer(Timer::from_seconds(9., false)));
@@ -58,7 +58,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands
 		.spawn_bundle(SpriteBundle {
 			texture: asset_server.load("lrm88-credit-slide_LI.png"),
-			transform: Transform::from_xyz(0., 0., -3.),
+			transform: Transform::from_xyz(0., 0., -1.),
 			..default()
 		})
 		.insert(PopupTimer(Timer::from_seconds(12., false)));
@@ -66,7 +66,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands
 		.spawn_bundle(SpriteBundle {
 			texture: asset_server.load("landin-credits.png"),
-			transform: Transform::from_xyz(0., 0., -3.),
+			transform: Transform::from_xyz(0., 0., -1.),
 			..default()
 		})
 		.insert(PopupTimer(Timer::from_seconds(15., false)));
@@ -74,7 +74,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands
 		.spawn_bundle(SpriteBundle {
 			texture: asset_server.load("Grant-Credit.png"),
-			transform: Transform::from_xyz(0., 0., -3.),
+			transform: Transform::from_xyz(0., 0., -1.),
 			..default()
 		})
 		.insert(PopupTimer(Timer::from_seconds(18., false)));
@@ -82,7 +82,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands
 		.spawn_bundle(SpriteBundle {
 			texture: asset_server.load("trezza-credit.png"),
-			transform: Transform::from_xyz(0., 0., -3.),
+			transform: Transform::from_xyz(0., 0., -1.),
 			..default()
 		})
 		.insert(PopupTimer(Timer::from_seconds(21., false)));
@@ -98,7 +98,7 @@ fn show_popup(
 	for (mut timer, mut transform) in popup.iter_mut() {
 		timer.tick(time.delta());
 		if timer.just_finished() {
-			transform.translation.z = 7.;
+			transform.translation.z = timer.duration().as_secs() as f32;
 			info!("End Credits!");
 		}
 	}
