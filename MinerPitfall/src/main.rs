@@ -49,7 +49,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands
 		.spawn_bundle(SpriteBundle {
 			texture: asset_server.load("landin-credits.png"),
-			transform: Transform::from_xyz(0., 0., -5.),
+			transform: Transform::from_xyz(0., 0., -3.),
 			..default()
 		})
 		.insert(PopupTimer(Timer::from_seconds(15., false)));
