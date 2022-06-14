@@ -22,6 +22,7 @@ fn main() {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+	//timings: Justin 3, Nara 6, Yinuo 9, Lucas 12, Landin 15, Grant 18, Matt 21
 	commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 	commands
 		.spawn_bundle(SpriteBundle {
