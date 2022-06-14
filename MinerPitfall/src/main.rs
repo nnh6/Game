@@ -46,7 +46,23 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 	})
 	.insert(PopupTimer(Timer::from_seconds(6., false)));
 	info!("Hello Nara!");
+	commands
+	.spawn_bundle(SpriteBundle {
+		texture: asset_server.load("yinuo-credit r.png"),
+		transform: Transform::from_xyz(0., 0., -6.),
+		..default()
+	})
+	.insert(PopupTimer(Timer::from_seconds(9., false)));
+	info!("Hello Yinuo!");
 	//Landin
+	commands
+		.spawn_bundle(SpriteBundle {
+			texture: asset_server.load("lrm88-credit-slide_LI.png"),
+			transform: Transform::from_xyz(0., 0., -3.),
+			..default()
+		})
+		.insert(PopupTimer(Timer::from_seconds(12., false)));
+	info!("Hello Lucas!");
 	commands
 		.spawn_bundle(SpriteBundle {
 			texture: asset_server.load("landin-credits.png"),
@@ -55,6 +71,23 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 		})
 		.insert(PopupTimer(Timer::from_seconds(15., false)));
 	info!("Hello Landin!");
+	commands
+		.spawn_bundle(SpriteBundle {
+			texture: asset_server.load("Grant-Credit.png"),
+			transform: Transform::from_xyz(0., 0., -3.),
+			..default()
+		})
+		.insert(PopupTimer(Timer::from_seconds(18., false)));
+	info!("Hello Grant!");
+	commands
+		.spawn_bundle(SpriteBundle {
+			texture: asset_server.load("trezza-credit.png"),
+			transform: Transform::from_xyz(0., 0., -3.),
+			..default()
+		})
+		.insert(PopupTimer(Timer::from_seconds(21., false)));
+	info!("Hello Matt!");
+	
 
 }
 
