@@ -3,14 +3,6 @@
 version = 3
 
 [[package]]
-name = "MinerPitfall"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "rand",
-]
-
-[[package]]
 name = "ab_glyph"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1893,6 +1885,14 @@ dependencies = [
  "foreign-types",
  "log",
  "objc",
+]
+
+[[package]]
+name = "miner_pitfall"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "rand",
 ]
 
 [[package]]
