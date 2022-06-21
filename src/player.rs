@@ -205,18 +205,18 @@ fn jump(
 
 	
 
-    if input.just_pressed(KeyCode::Space) {
+    if input.just_pressed(KeyCode::Space) { //starts jump timer
         jump.reset();
 	}
 
 	jump.tick(time.delta());
 
-    if jump.elapsed() == Duration::new(0,100000001) {
+    if jump.elapsed() == Duration::new(0,100000001) { //jump timer over gravity on
 		**velocity = Vec2::new(
 			0.,
 			-100.,
 		)
-	} else {
+	} else { //jump timer is on
 		**velocity = Vec2::new(
 			0.,
 			1000.
