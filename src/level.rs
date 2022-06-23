@@ -83,7 +83,7 @@ fn setup_level(
 	let brick_atlas = texture_atlases.get(&brick_sheet.0);
 	let brick_len = brick_atlas.unwrap().len();
 	let mut i = 0;
-	//let mut t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., -WIN_H/2. + TILE_SIZE/2., 0.);
+	let mut t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
 	for(y, line) in BufReader::new(file).lines().enumerate() { //read each line from file
 		if let Ok(line) = line {
 			for (x, char) in line.chars().enumerate() { //read each char from line
@@ -96,15 +96,15 @@ fn setup_level(
 					..default()
 				},
 				transform: Transform {
-					translation: Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
+					translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
 					..default()
 				},
 				..default()
 			})
 			.insert(Brick);
 
-		//i += 1;
-			}
+		i += 1;
+			
 			}
 		}
 	}

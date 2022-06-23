@@ -64,7 +64,7 @@ fn main() {
 		.add_plugin(LoadingPlugin)
 		//.add_plugin(BackgroundMusicPlugin)
 		.add_plugin(PlayerPlugin)
-		//.add_plugin(LevelPlugin)
+		.add_plugin(LevelPlugin)
 		// Run the game
 		.run();
 }
