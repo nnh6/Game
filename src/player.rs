@@ -4,7 +4,7 @@ use std::convert::From;
 use std::time::Duration;
 
 use crate::{
-	LEVEL_LEN,
+	//LEVEL_LEN,
 	WIN_W,
 	WIN_H,
 	TILE_SIZE,
@@ -58,7 +58,7 @@ impl Plugin for PlayerPlugin {
 					.run_in_state(GameState::Playing)
 					.after("move_player")
 					.with_system(animate_player)
-					.with_system(move_camera)
+					//.with_system(move_camera)
 					.with_system(jump)
 					.into()
 			);
@@ -142,7 +142,7 @@ fn move_player(
 		0.,
 	);
 	if new_pos.x >= -(WIN_W/2.) + TILE_SIZE/2.
-		&& new_pos.x <= LEVEL_LEN - (WIN_W/2. + TILE_SIZE/2.)
+		&& new_pos.x <= (WIN_W/2. - TILE_SIZE/2.)
 	{
 		transform.translation = new_pos;
 	}
@@ -183,15 +183,15 @@ fn animate_player(
 	}
 }
 
-fn move_camera(
-	player: Query<&Transform, With<Player>>,
-	mut camera: Query<&mut Transform, (Without<Player>, With<Camera>)>,
-){
-	let pt = player.single();
-	let mut ct = camera.single_mut();
+// fn move_camera(
+// 	player: Query<&Transform, With<Player>>,
+// 	mut camera: Query<&mut Transform, (Without<Player>, With<Camera>)>,
+// ){
+// 	let pt = player.single();
+// 	let mut ct = camera.single_mut();
 
-	ct.translation.x = pt.translation.x.clamp(0., LEVEL_LEN - WIN_W);
-}
+// 	ct.translation.x = pt.translation.x.clamp(0., LEVEL_LEN - WIN_W);
+// }
 
 
 fn jump(
@@ -214,12 +214,12 @@ fn jump(
     if jump.elapsed() == Duration::new(0,100000001) { //jump timer over gravity on
 		**velocity = Vec2::new(
 			0.,
-			-100.,
+			-300.,
 		)
 	} else { //jump timer is on
 		**velocity = Vec2::new(
 			0.,
-			1000.
+			1500.
 		)
 	}
 

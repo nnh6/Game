@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-	LEVEL_LEN,
+	//LEVEL_LEN,
 	WIN_W,
 	WIN_H,
 	TILE_SIZE,
@@ -67,18 +67,18 @@ fn setup_level(
 	background_image: Res<BackgroundImage>,
 	brick_sheet: Res<BrickSheet>,
 ) {
-	let mut x_offset = 0.;
-	while x_offset < LEVEL_LEN {
-		commands
-			.spawn_bundle(SpriteBundle {
-				texture: background_image.0.clone(),
-				transform: Transform::from_xyz(x_offset, 0., 0.),
+	commands
+		.spawn_bundle(SpriteBundle {
+			texture: background_image.0.clone(),
+			transform: Transform {
+				translation: Vec3::new(0., 0. , 100.0), 
 				..default()
-			})
-			.insert(Background);
+			},
+			..default()
+		})
+		.insert(Background); //spawns background
 
-		x_offset += WIN_W;
-		}
+
 	let file = File::open("assets/map.txt").expect("No map file found");
 	let brick_atlas = texture_atlases.get(&brick_sheet.0);
 	let brick_len = brick_atlas.unwrap().len();
@@ -104,7 +104,6 @@ fn setup_level(
 			.insert(Brick);
 
 		i += 1;
-			
 			}
 		}
 	}

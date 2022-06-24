@@ -25,7 +25,7 @@ const ANIM_TIME: f32 = 0.2;
 const JUMP_TIME: f32 = 0.1;
 const TILE_SIZE: f32 = 100.;
 
-const LEVEL_LEN: f32 = 5000.;
+//const LEVEL_LEN: f32 = 1280.;
 
 const PROGRESS_LENGTH: f32 = 120.;
 const PROGRESS_HEIGHT: f32 = 20.;
