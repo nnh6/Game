@@ -23,8 +23,11 @@ pub struct Brick;
 #[derive(Component)]
 pub struct Background;
 
+#[derive(Component)]
+pub struct Door;
 // Will need to access these with .0, not deriving Deref/DerefMut
 pub struct BackgroundImage(Handle<Image>);
+pub struct DoorImage(Handle<Image>);
 pub struct BrickSheet(Handle<TextureAtlas>);
 
 pub struct LevelPlugin;
@@ -59,12 +62,21 @@ fn load_level(
 	let brick_atlas_handle = texture_atlases.add(brick_atlas);
 
 	commands.insert_resource(BrickSheet(brick_atlas_handle));
+
+	let door_handle = asset_server.load("door.png");
+	loading_assets.0.insert(
+		door_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(door_handle.clone_untyped(), &asset_server),
+	);
+	commands.insert_resource(DoorImage(door_handle));
+
 }
 
 fn setup_level(
 	mut commands: Commands,
 	texture_atlases: Res<Assets<TextureAtlas>>,	
 	background_image: Res<BackgroundImage>,
+	door_image: Res<DoorImage>,
 	brick_sheet: Res<BrickSheet>,
 ) {
 	commands
@@ -87,25 +99,39 @@ fn setup_level(
 	for(y, line) in BufReader::new(file).lines().enumerate() { //read each line from file
 		if let Ok(line) = line {
 			for (x, char) in line.chars().enumerate() { //read each char from line
-			if char == '#' { //probably actually want a switch statement
-		commands
-			.spawn_bundle(SpriteSheetBundle {
-				texture_atlas: brick_sheet.0.clone(),
-				sprite: TextureAtlasSprite {
-					index: i % brick_len,
-					..default()
-				},
-				transform: Transform {
-					translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
-					..default()
-				},
-				..default()
-			})
-			.insert(Brick);
+				if char == '#' { //probably actually want a switch statement
+					commands
+						.spawn_bundle(SpriteSheetBundle {
+							texture_atlas: brick_sheet.0.clone(),
+							sprite: TextureAtlasSprite {
+								index: i % brick_len,
+								..default()
+							},
+							transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
+								..default()
+							},
+							..default()
+						})
+						.insert(Brick);
 
-		i += 1;
+					i += 1;
+				}
+				if char == 'D' {
+					commands
+						.spawn_bundle(SpriteBundle {
+							texture: door_image.0.clone(),
+							transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
+								..default()
+							},
+							..default()
+						})
+						.insert(Door);
+
+					i += 1;
+				}
 			}
-		}
 	}
 	}
 }
