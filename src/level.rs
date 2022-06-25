@@ -1,8 +1,12 @@
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+}; //might have to ask to use these
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::{
-	LEVEL_LEN,
+	//LEVEL_LEN,
 	WIN_W,
 	WIN_H,
 	TILE_SIZE,
@@ -63,24 +67,27 @@ fn setup_level(
 	background_image: Res<BackgroundImage>,
 	brick_sheet: Res<BrickSheet>,
 ) {
-	let mut x_offset = 0.;
-	while x_offset < LEVEL_LEN {
-		commands
-			.spawn_bundle(SpriteBundle {
-				texture: background_image.0.clone(),
-				transform: Transform::from_xyz(x_offset, 0., 0.),
+	commands
+		.spawn_bundle(SpriteBundle {
+			texture: background_image.0.clone(),
+			transform: Transform {
+				translation: Vec3::new(0., 0. , 100.0), 
 				..default()
-			})
-			.insert(Background);
+			},
+			..default()
+		})
+		.insert(Background); //spawns background
 
-		x_offset += WIN_W;
-	}
 
+	let file = File::open("assets/map.txt").expect("No map file found");
 	let brick_atlas = texture_atlases.get(&brick_sheet.0);
 	let brick_len = brick_atlas.unwrap().len();
 	let mut i = 0;
-	let mut t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., -WIN_H/2. + TILE_SIZE/2., 0.);
-	while (i as f32) * TILE_SIZE < LEVEL_LEN {
+	let mut t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
+	for(y, line) in BufReader::new(file).lines().enumerate() { //read each line from file
+		if let Ok(line) = line {
+			for (x, char) in line.chars().enumerate() { //read each char from line
+			if char == '#' { //probably actually want a switch statement
 		commands
 			.spawn_bundle(SpriteSheetBundle {
 				texture_atlas: brick_sheet.0.clone(),
@@ -89,7 +96,7 @@ fn setup_level(
 					..default()
 				},
 				transform: Transform {
-					translation: t,
+					translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
 					..default()
 				},
 				..default()
@@ -97,6 +104,8 @@ fn setup_level(
 			.insert(Brick);
 
 		i += 1;
-		t += Vec3::new(TILE_SIZE, 0., 0.);
+			}
+		}
+	}
 	}
 }

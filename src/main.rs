@@ -23,10 +23,10 @@ const WIN_H: f32 = 720.;
 const PLAYER_SPEED: f32 = 500.;
 const ACCEL_RATE: f32 = 5000.;
 const ANIM_TIME: f32 = 0.2;
-
+const JUMP_TIME: f32 = 0.1;
 const TILE_SIZE: f32 = 100.;
 
-const LEVEL_LEN: f32 = 5000.;
+//const LEVEL_LEN: f32 = 1280.;
 
 const PROGRESS_LENGTH: f32 = 120.;
 const PROGRESS_HEIGHT: f32 = 20.;
@@ -80,7 +80,7 @@ fn main() {
 		.add_plugin(LoadingPlugin)
 		//.add_plugin(BackgroundMusicPlugin)
 		.add_plugin(PlayerPlugin)
-		//.add_plugin(LevelPlugin)
+		.add_plugin(LevelPlugin)
 		// Run the game
 		.run();
 }

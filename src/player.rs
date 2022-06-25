@@ -1,15 +1,17 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use std::convert::From;
+use std::time::Duration;
 
 use crate::{
-	LEVEL_LEN,
+	//LEVEL_LEN,
 	WIN_W,
 	WIN_H,
 	TILE_SIZE,
 	ANIM_TIME,
 	ACCEL_RATE,
 	PLAYER_SPEED,
+	JUMP_TIME,
 	GameState,
 	loading::{
 		LoadingAssets,
@@ -29,6 +31,9 @@ pub struct Velocity(Vec2);
 
 #[derive(Deref, DerefMut)]
 pub struct PlayerSheet(Handle<TextureAtlas>);
+
+#[derive(Component,Deref, DerefMut)]
+pub struct JumpTimer(Timer);
 
 impl Velocity {
 	fn new() -> Self {
@@ -53,7 +58,8 @@ impl Plugin for PlayerPlugin {
 					.run_in_state(GameState::Playing)
 					.after("move_player")
 					.with_system(animate_player)
-					.with_system(move_camera)
+					//.with_system(move_camera)
+					.with_system(jump)
 					.into()
 			);
 	}
@@ -93,6 +99,7 @@ fn spawn_player(
 		})
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		.insert(Velocity::new())
+		.insert(JumpTimer(Timer::from_seconds(JUMP_TIME, false)))
 		.insert(Player);
 }
 
@@ -135,7 +142,7 @@ fn move_player(
 		0.,
 	);
 	if new_pos.x >= -(WIN_W/2.) + TILE_SIZE/2.
-		&& new_pos.x <= LEVEL_LEN - (WIN_W/2. + TILE_SIZE/2.)
+		&& new_pos.x <= (WIN_W/2. - TILE_SIZE/2.)
 	{
 		transform.translation = new_pos;
 	}
@@ -176,13 +183,45 @@ fn animate_player(
 	}
 }
 
-fn move_camera(
-	player: Query<&Transform, With<Player>>,
-	mut camera: Query<&mut Transform, (Without<Player>, With<Camera>)>,
-){
-	let pt = player.single();
-	let mut ct = camera.single_mut();
+// fn move_camera(
+// 	player: Query<&Transform, With<Player>>,
+// 	mut camera: Query<&mut Transform, (Without<Player>, With<Camera>)>,
+// ){
+// 	let pt = player.single();
+// 	let mut ct = camera.single_mut();
 
-	ct.translation.x = pt.translation.x.clamp(0., LEVEL_LEN - WIN_W);
+// 	ct.translation.x = pt.translation.x.clamp(0., LEVEL_LEN - WIN_W);
+// }
+
+
+fn jump(
+    time: Res<Time>,
+    mut player: Query<(&mut JumpTimer, &mut Velocity), (With<Player>, Without<Background>)>,
+    input: Res<Input<KeyCode>>,
+) {
+    // assume we have exactly one player that jumps with Spacebar
+    
+	let (mut jump, mut velocity) = player.single_mut();
+
+	
+
+    if input.just_pressed(KeyCode::Space) { //starts jump timer
+        jump.reset();
+	}
+
+	jump.tick(time.delta());
+
+    if jump.elapsed() == Duration::new(0,100000001) { //jump timer over gravity on
+		**velocity = Vec2::new(
+			0.,
+			-300.,
+		)
+	} else { //jump timer is on
+		**velocity = Vec2::new(
+			0.,
+			1500.
+		)
+	}
+
+	//info!("{:?}",jump.duration());
 }
-
