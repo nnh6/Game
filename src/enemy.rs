@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-use std::convert::From;
-use std::time::Duration;
+//use std::convert::From;
+//use std::time::Duration;
 
 use crate::{
 	//LEVEL_LEN,
@@ -17,7 +17,7 @@ use crate::{
 		LoadingAssets,
 		LoadingAssetInfo,
 	},
-	level::Background,
+	//level::Background,
 };
 
 #[derive(Component)]
@@ -40,7 +40,7 @@ fn load_enemy_sheet(
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	mut loading_assets: ResMut<LoadingAssets>,
 ) {
-	let enemy_handle = asset_server.load("enemy2.png");
+	let enemy_handle = asset_server.load("enemy.png");
 	loading_assets.insert(
 		enemy_handle.clone_untyped(),
 		LoadingAssetInfo::for_handle(enemy_handle.clone_untyped(), &asset_server),
