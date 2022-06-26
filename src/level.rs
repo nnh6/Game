@@ -17,6 +17,8 @@ use crate::{
 	},
 };
 
+
+
 #[derive(Component)]
 pub struct Brick;
 
@@ -25,6 +27,7 @@ pub struct Background;
 
 #[derive(Component)]
 pub struct Door;
+
 // Will need to access these with .0, not deriving Deref/DerefMut
 pub struct BackgroundImage(Handle<Image>);
 pub struct DoorImage(Handle<Image>);

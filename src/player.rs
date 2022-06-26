@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use std::convert::From;
 use std::time::Duration;
-
+use bevy::sprite::collide_aabb::collide;
 use crate::{
 	//LEVEL_LEN,
 	WIN_W,
@@ -18,6 +18,7 @@ use crate::{
 		LoadingAssetInfo,
 	},
 	level::Background,
+	level::Door,
 };
 
 #[derive(Component)]
@@ -60,6 +61,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(animate_player)
 					//.with_system(move_camera)
 					.with_system(jump)
+					.with_system(enter_door)
 					.into()
 			);
 	}
@@ -224,4 +226,21 @@ fn jump(
 	}
 
 	//info!("{:?}",jump.duration());
+}
+
+fn enter_door(
+	mut commands: Commands,
+	player: Query<&Transform, With<Player>>,
+	door: Query<&Transform, With<Door>>,
+	input: Res<Input<KeyCode>>,
+) {
+	let player_transform = player.single();
+	let door_transform = door.single();
+	if input.just_pressed(KeyCode::W) {
+		if collide(player_transform.translation, Vec2::splat(50.), door_transform.translation, Vec2::splat(50.)).is_some() {
+			info!("door open!");
+			commands.insert_resource(NextState(GameState::Credits));
+		}
+	}
+	
 }
