@@ -10,11 +10,13 @@ mod loading;
 mod player;
 mod level;
 mod music;
+mod health;
 
 use loading::LoadingPlugin;
 use level::LevelPlugin;
 use player::PlayerPlugin;
 use music::BackgroundMusicPlugin;
+use health::HealthPlugin;
 
 const TITLE: &str = "Miner Pitfall!";
 const WIN_W: f32 = 1280.;
@@ -25,6 +27,8 @@ const ACCEL_RATE: f32 = 5000.;
 const ANIM_TIME: f32 = 0.2;
 const JUMP_TIME: f32 = 0.1;
 const TILE_SIZE: f32 = 100.;
+
+static HEALTH: f32 = 100.;
 
 //const LEVEL_LEN: f32 = 1280.;
 
@@ -81,6 +85,7 @@ fn main() {
 		//.add_plugin(BackgroundMusicPlugin)
 		.add_plugin(PlayerPlugin)
 		.add_plugin(LevelPlugin)
+		.add_plugin(HealthPlugin)
 		// Run the game
 		.run();
 }
@@ -115,3 +120,7 @@ fn display_slides(
 		.insert(Slide);
 	}
 }
+
+//fn display_health(){
+//	println!("{}", &HEALTH);
+//}
