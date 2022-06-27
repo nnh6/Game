@@ -17,6 +17,8 @@ use crate::{
 	},
 };
 
+
+
 #[derive(Component)]
 pub struct Brick;
 
@@ -25,6 +27,7 @@ pub struct Background;
 
 #[derive(Component)]
 pub struct Door;
+
 // Will need to access these with .0, not deriving Deref/DerefMut
 pub struct BackgroundImage(Handle<Image>);
 pub struct DoorImage(Handle<Image>);
@@ -99,39 +102,44 @@ fn setup_level(
 	for(y, line) in BufReader::new(file).lines().enumerate() { //read each line from file
 		if let Ok(line) = line {
 			for (x, char) in line.chars().enumerate() { //read each char from line
-				if char == '#' { //probably actually want a switch statement
-					commands
-						.spawn_bundle(SpriteSheetBundle {
-							texture_atlas: brick_sheet.0.clone(),
-							sprite: TextureAtlasSprite {
-								index: i % brick_len,
+				match char { 
+					'#'=> {
+						commands
+							.spawn_bundle(SpriteSheetBundle {
+								texture_atlas: brick_sheet.0.clone(),
+								sprite: TextureAtlasSprite {
+									index: i % brick_len,
+									..default()
+								},
+								transform: Transform {
+									translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
+									..default()
+								},
 								..default()
-							},
-							transform: Transform {
-								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
-								..default()
-							},
-							..default()
-						})
-						.insert(Brick);
+							})
+							.insert(Brick);
 
-					i += 1;
-				}
-				if char == 'D' {
-					commands
-						.spawn_bundle(SpriteBundle {
-							texture: door_image.0.clone(),
-							transform: Transform {
-								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
+						i += 1;
+					},
+					'D'=> {
+						commands
+							.spawn_bundle(SpriteBundle {
+								texture: door_image.0.clone(),
+								transform: Transform {
+									translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
+									..default()
+								},
 								..default()
-							},
-							..default()
-						})
-						.insert(Door);
+							})
+							.insert(Door);
 
-					i += 1;
+						i += 1;
+					}
+					_=> {
+						//default case
+					}
 				}
 			}
-	}
-	}
+		}
+    }
 }

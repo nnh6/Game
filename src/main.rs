@@ -49,6 +49,7 @@ struct PopupTimer {
 enum GameState {
 	Loading,
 	Playing,
+	Credits,
 }
 
 fn main() {
@@ -74,9 +75,11 @@ fn main() {
 		.add_loopless_state(GameState::Loading)
 		// Add general systems
 		.add_startup_system(setup_camera)
-		// **Needs a way to be triggered on game exit or win state **
-		//.add_system(display_slides)
-		
+		.add_system(
+			display_slides
+				.run_in_state(GameState::Credits)
+			)
+		.add_enter_system(GameState::Credits, despawn_all)
 		.add_system(log_state_change)
 		// Add all subsystems
 		//############### currently greyed out everything but player ######
@@ -104,13 +107,13 @@ fn display_slides(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
 	time: Res<Time>,
-	mut p_timer: ResMut<PopupTimer>
+	mut p_timer: ResMut<PopupTimer>,
 ) {
 	p_timer.timer.tick(time.delta());
 	if p_timer.timer.just_finished() && p_timer.z < 8. {
 		let name = p_timer.names[p_timer.z as usize];
 		p_timer.z = p_timer.z + 1.;
-		info!("{}", name);
+		
 		commands
 		.spawn_bundle(SpriteBundle {
 			texture: asset_server.load(name),
@@ -119,6 +122,16 @@ fn display_slides(
 		})
 		.insert(Slide);
 	}
+}
+
+fn despawn_all (
+    mut commands: Commands,
+    query: Query<Entity, With<Transform>>,
+)
+{
+    query.for_each(|entity| {
+        commands.entity(entity).despawn();
+	});
 }
 
 //fn display_health(){
