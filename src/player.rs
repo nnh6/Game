@@ -19,6 +19,7 @@ use crate::{
 	},
 	level::Background,
 	level::Door,
+	level::Background, HEALTH,
 };
 
 #[derive(Component)]
@@ -59,7 +60,7 @@ impl Plugin for PlayerPlugin {
 					.run_in_state(GameState::Playing)
 					.after("move_player")
 					.with_system(animate_player)
-					//.with_system(move_camera)
+					.with_system(move_camera)
 					.with_system(jump)
 					.with_system(enter_door)
 					.into()
@@ -185,15 +186,23 @@ fn animate_player(
 	}
 }
 
-// fn move_camera(
-// 	player: Query<&Transform, With<Player>>,
-// 	mut camera: Query<&mut Transform, (Without<Player>, With<Camera>)>,
-// ){
-// 	let pt = player.single();
-// 	let mut ct = camera.single_mut();
+fn move_camera(
+ 	player: Query<&Transform, With<Player>>,
+ 	mut camera: Query<&mut Transform, (Without<Player>, With<Camera>)>,
+ ){
+ 	//let pt = player.single();
+ 	//let mut ct = camera.single_mut();
 
-// 	ct.translation.x = pt.translation.x.clamp(0., LEVEL_LEN - WIN_W);
-// }
+ 	//ct.translation.x = pt.translation.x.clamp(0., LEVEL_LEN - WIN_W);
+	//display_health();
+ }
+
+//fn display_health(
+	
+//) {
+	
+//}
+
 
 
 fn jump(
