@@ -19,12 +19,13 @@ pub struct Health; //
 
 //#[derive(Deref, DerefMut)]
 //pub struct PlayerSheet(Handle<TextureAtlas>); //
-pub struct HealthImage(Handle<Image>);
+#[derive(Deref, DerefMut)]
+pub struct HealthAtlas(Handle<TextureAtlas>);
 
 pub struct HealthPlugin;
 impl Plugin for HealthPlugin {
 	fn build (&self, app: &mut App) {
-		app.add_enter_system(GameState::Playing, load_health_sheet)
+		app.add_enter_system(GameState::Loading, load_health_sheet)
 			.add_enter_system(GameState::Playing, spawn_health);
 	}
 }
@@ -34,23 +35,27 @@ fn load_health_sheet(
 	asset_server: Res<AssetServer>,
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	mut loading_assets: ResMut<LoadingAssets>,
-) {
+){
 	
-	let health_texture_handle = asset_server.load("Health_Hearts_Large.png");
-	loading_assets.0.insert(
-		health_texture_handle.clone_untyped(),
-		LoadingAssetInfo::for_handle(health_texture_handle.clone_untyped(), &asset_server),
+	let hp_handle = asset_server.load("Health_Hearts_Large.png");
+	loading_assets.insert(
+		hp_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(hp_handle.clone_untyped(), &asset_server),
 	);
 
-	commands.insert_resource(HealthImage(health_texture_handle));
+	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::splat(TILE_SIZE), 2, 6);
+	let hp_atlas_handle = texture_atlases.add(hp_atlas);
 
+	commands.insert_resource(HealthAtlas(hp_atlas_handle));
+	
+}
 	//let player_atlas = TextureAtlas::from_grid(player_handle, Vec2::splat(100.), 2, 6);
 	//let player_atlas_handle = texture_atlases.add(player_atlas);
 	
 	//commands.insert_resource(PlayerSheet(player_atlas_handle));
 
 	////
- /*
+/*
 fn load_health_sheet(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
@@ -68,26 +73,25 @@ fn load_health_sheet(
 	let player_atlas_handle = texture_atlases.add(player_atlas);
 	
 	commands.insert_resource(PlayerSheet(player_atlas_handle));
-	*/
-}
+}*/
 
+/* 
 fn spawn_health(
 	mut commands: Commands,
-	//health_sheet: Res<HealthImage>,
+	health_sheet: Res<HealthAtlas>,
 ){
-	/*
 	commands
 		.spawn_bundle(SpriteSheetBundle {
-			texture_atlas: health_sheet.0.clone(),
+			texture_atlas: health_sheet.clone(),
 			sprite: TextureAtlasSprite {
 				index: 0,
 				..default()
 			},
 			transform: Transform::from_xyz(-(WIN_W/2.), -(WIN_H/2.) + (TILE_SIZE * 1.5), 900.),
 			..default()
-		});*/
+		});
 	
-}
+}*/
 
 fn update_health(){//not completed
 	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
