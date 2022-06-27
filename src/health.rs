@@ -22,6 +22,10 @@ pub struct Health; //
 #[derive(Deref, DerefMut)]
 pub struct HealthAtlas(Handle<TextureAtlas>);
 
+//const bevy::prelude::Vec2
+//pub struct Vec2(f32, f32);
+//pub fn new(x: f32, y: f32) -> Vec2;
+
 pub struct HealthPlugin;
 impl Plugin for HealthPlugin {
 	fn build (&self, app: &mut App) {
@@ -37,13 +41,13 @@ fn load_health_sheet(
 	mut loading_assets: ResMut<LoadingAssets>,
 ){
 	
-	let hp_handle = asset_server.load("Health_Hearts_Large.png");
+	let hp_handle = asset_server.load("Health_Hearts_Small.png");
 	loading_assets.insert(
 		hp_handle.clone_untyped(),
 		LoadingAssetInfo::for_handle(hp_handle.clone_untyped(), &asset_server),
 	);
 
-	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::splat(TILE_SIZE), 2, 6);
+	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::new(300., 35.), 2, 6);
 	let hp_atlas_handle = texture_atlases.add(hp_atlas);
 
 	commands.insert_resource(HealthAtlas(hp_atlas_handle));
@@ -75,7 +79,7 @@ fn load_health_sheet(
 	commands.insert_resource(PlayerSheet(player_atlas_handle));
 }*/
 
-/* 
+ 
 fn spawn_health(
 	mut commands: Commands,
 	health_sheet: Res<HealthAtlas>,
@@ -87,11 +91,11 @@ fn spawn_health(
 				index: 0,
 				..default()
 			},
-			transform: Transform::from_xyz(-(WIN_W/2.), -(WIN_H/2.) + (TILE_SIZE * 1.5), 900.),
+			transform: Transform::from_xyz(-(WIN_W/2.) + (TILE_SIZE * 1.55)  , (WIN_H/2.) - (TILE_SIZE * 0.3), 900.),
 			..default()
 		});
 	
-}*/
+}
 
 fn update_health(){//not completed
 	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
