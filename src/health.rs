@@ -29,8 +29,8 @@ pub struct HealthAtlas(Handle<TextureAtlas>);
 pub struct HealthPlugin;
 impl Plugin for HealthPlugin {
 	fn build (&self, app: &mut App) {
-		app.add_enter_system(GameState::Loading, load_health_sheet)
-			.add_enter_system(GameState::Playing, spawn_health);
+		app.add_enter_system(GameState::Loading, load_health_sheet);
+			//.add_enter_system(GameState::Playing, spawn_health);
 	}
 }
 
