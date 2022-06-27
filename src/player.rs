@@ -20,6 +20,10 @@ use crate::{
 	level::Background,
 	level::Door,
 	//level::HEALTH,
+	enemy::{
+		Enemy,
+		EnemySheet
+	}
 };
 
 #[derive(Component)]
@@ -63,6 +67,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(move_camera)
 					.with_system(jump)
 					.with_system(enter_door)
+					.with_system(check_enemy_collision)
 					.into()
 			);
 	}
@@ -253,3 +258,16 @@ fn enter_door(
 	}
 	
 }
+
+fn check_enemy_collision(
+	player: Query<&Transform, With<Player>>,
+	enemy_sheet: Res<EnemySheet>,
+	enemy: Query<&Transform, With<Enemy>>,
+) {
+	let player_transform = player.single();
+	let enemy_transform = enemy.single();
+	if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
+		info!("ouch");
+	}
+}
+	
