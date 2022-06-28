@@ -4,7 +4,7 @@ use bevy::{
 };
 use std::time::Duration;
 use iyes_loopless::prelude::*;
-use bevy_kira_audio::AudioPlugin;
+//use bevy_kira_audio::AudioPlugin;
 
 mod loading;
 mod player;
@@ -16,7 +16,7 @@ mod enemy;
 use loading::LoadingPlugin;
 use level::LevelPlugin;
 use player::PlayerPlugin;
-use music::BackgroundMusicPlugin;
+//use music::BackgroundMusicPlugin;
 use health::HealthPlugin;
 use enemy::EnemyPlugin;
 
@@ -115,7 +115,7 @@ fn display_slides(
 	p_timer.timer.tick(time.delta());
 	if p_timer.timer.just_finished() && p_timer.z < 8. {
 		let name = p_timer.names[p_timer.z as usize];
-		p_timer.z = p_timer.z + 1.;
+		p_timer.z += 1.;
 		
 		commands
 		.spawn_bundle(SpriteBundle {
