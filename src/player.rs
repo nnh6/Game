@@ -17,7 +17,7 @@ use crate::{
 		LoadingAssets,
 		LoadingAssetInfo,
 	},
-	//level::Background,
+	level::Background,
 	level::Door,
 	//level::HEALTH,
 	enemy::{
@@ -192,8 +192,8 @@ fn animate_player(
 }
 
 fn move_camera(
- 	player: Query<&Transform, With<Player>>,
- 	mut camera: Query<&mut Transform, (Without<Player>, With<Camera>)>,
+ 	_player: Query<&Transform, With<Player>>,
+ 	_camera: Query<&mut Transform, (Without<Player>, With<Camera>)>,
  ){
  	//let pt = player.single();
  	//let mut ct = camera.single_mut();
@@ -250,18 +250,16 @@ fn enter_door(
 ) {
 	let player_transform = player.single();
 	let door_transform = door.single();
-	if input.just_pressed(KeyCode::W) {
-		if collide(player_transform.translation, Vec2::splat(50.), door_transform.translation, Vec2::splat(50.)).is_some() {
-			info!("door open!");
-			commands.insert_resource(NextState(GameState::Credits));
-		}
-	}
+	if input.just_pressed(KeyCode::W) && collide(player_transform.translation, Vec2::splat(50.), door_transform.translation, Vec2::splat(50.)).is_some() {
+ 			info!("door open!");
+ 			commands.insert_resource(NextState(GameState::Credits));
+ 		}
 	
 }
 
 fn check_enemy_collision(
 	player: Query<&Transform, With<Player>>,
-	enemy_sheet: Res<EnemySheet>,
+	_enemy_sheet: Res<EnemySheet>,
 	enemy: Query<&Transform, With<Enemy>>,
 ) {
 	let player_transform = player.single();

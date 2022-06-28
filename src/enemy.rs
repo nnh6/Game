@@ -5,7 +5,7 @@ use iyes_loopless::prelude::*;
 
 use crate::{
 	//LEVEL_LEN,
-	WIN_W,
+	//WIN_W,
 	WIN_H,
 	TILE_SIZE,
 	//ANIM_TIME,
