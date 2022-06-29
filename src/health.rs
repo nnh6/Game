@@ -6,6 +6,7 @@ use crate::{
 	WIN_W,
 	WIN_H,
 	TILE_SIZE,
+	HEALTH,
 	GameState,
 	loading::{
 		LoadingAssets,
@@ -29,8 +30,8 @@ pub struct HealthAtlas(Handle<TextureAtlas>);
 pub struct HealthPlugin;
 impl Plugin for HealthPlugin {
 	fn build (&self, app: &mut App) {
-		app.add_enter_system(GameState::Loading, load_health_sheet);
-			//.add_enter_system(GameState::Playing, spawn_health);
+		app.add_enter_system(GameState::Loading, load_health_sheet)//;
+			.add_enter_system(GameState::Playing, spawn_health);
 	}
 }
 
@@ -97,9 +98,21 @@ fn spawn_health(
 	
 }
 
-fn update_health(){//not completed
-	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-	//sprite.index = texture_atlas.textures.len() - (HEALTH/10.).round(); //Use health to determine the index of the health sprite to show
+fn update_health(
+	texture_atlases: Res<Assets<TextureAtlas>>,
+	mut health: Query<
+		(
+			&mut TextureAtlasSprite,
+			&Handle<TextureAtlas>,
+		),
+		With<Health>
+	>,
+){//not completed
+	let (mut sprite, texture_atlas_handle) = health.single_mut();
+	let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+	let hs_len : usize = texture_atlas.textures.len() as usize;
+	let c_health : usize = (HEALTH/10.).round() as usize;
+	sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
 }
 
 /*

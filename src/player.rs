@@ -266,6 +266,8 @@ fn check_enemy_collision(
 	let enemy_transform = enemy.single();
 	if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
 		info!("ouch");
+		//let HEALTH = HEALTH - 5;
+		//after health changed, update state of health sprite
 	}
 }
 	
