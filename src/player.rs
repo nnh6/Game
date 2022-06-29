@@ -12,7 +12,7 @@ use crate::{
 	ACCEL_RATE,
 	PLAYER_SPEED,
 	JUMP_TIME,
-	MainCamera,
+	HEALTH,
 	GameState,
 	loading::{
 		LoadingAssets,
@@ -42,6 +42,13 @@ pub struct PlayerSheet(Handle<TextureAtlas>);
 #[derive(Component,Deref, DerefMut)]
 pub struct JumpTimer(Timer);
 
+//////////////////////////////////////////////////////////////////
+#[derive(Component)]
+pub struct Health; //
+/////////////////////////////////////////////////////////////////
+#[derive(Deref, DerefMut)]
+pub struct HealthAtlas(Handle<TextureAtlas>);
+
 impl Velocity {
 	fn new() -> Self {
 		Self(Vec2::splat(0.))
@@ -59,6 +66,8 @@ impl Plugin for PlayerPlugin {
 	fn build (&self, app: &mut App) {
 		app.add_enter_system(GameState::Loading, load_player_sheet)
 			.add_enter_system(GameState::Playing, spawn_player)
+			.add_enter_system(GameState::Loading, load_health_sheet)//;//////////////
+			.add_enter_system(GameState::Playing, spawn_health)//;/////////////
 			.add_system(move_player.run_in_state(GameState::Playing).label("move_player"))
 			.add_system_set(
 				ConditionSet::new()
@@ -267,6 +276,62 @@ fn check_enemy_collision(
 	let enemy_transform = enemy.single();
 	if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
 		info!("ouch");
+		//let HEALTH = HEALTH - 5;
+		//after health changed, update state of health sprite
 	}
 }
+
+///////////////////////////////////////
+fn load_health_sheet(
+	mut commands: Commands,
+	asset_server: Res<AssetServer>,
+	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+	mut loading_assets: ResMut<LoadingAssets>,
+){
 	
+	let hp_handle = asset_server.load("Health_Hearts_Small.png");
+	loading_assets.insert(
+		hp_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(hp_handle.clone_untyped(), &asset_server),
+	);
+
+	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::new(300., 35.), 2, 6);
+	let hp_atlas_handle = texture_atlases.add(hp_atlas);
+
+	commands.insert_resource(HealthAtlas(hp_atlas_handle));
+	
+}
+ 
+fn spawn_health(
+	mut commands: Commands,
+	health_sheet: Res<HealthAtlas>,
+){
+	commands
+		.spawn_bundle(SpriteSheetBundle {
+			texture_atlas: health_sheet.clone(),
+			sprite: TextureAtlasSprite {
+				index: 0,
+				..default()
+			},
+			transform: Transform::from_xyz(-(WIN_W/2.) + (TILE_SIZE * 1.55)  , (WIN_H/2.) - (TILE_SIZE * 0.3), 900.),
+			..default()
+		});
+
+}
+
+fn update_health(
+	texture_atlases: Res<Assets<TextureAtlas>>,
+	mut health: Query<
+		(
+			&mut TextureAtlasSprite,
+			&Handle<TextureAtlas>,
+		),
+		With<Health>
+	>,
+){//not completed
+	let (mut sprite, texture_atlas_handle) = health.single_mut();
+	let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+	let hs_len : usize = texture_atlas.textures.len() as usize;
+	let c_health : usize = (HEALTH/10.).round() as usize;
+	sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
+}
