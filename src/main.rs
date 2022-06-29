@@ -10,14 +10,14 @@ mod loading;
 mod player;
 mod level;
 mod music;
-mod health;
+//mod health;
 mod enemy;
 
 use loading::LoadingPlugin;
 use level::LevelPlugin;
 use player::PlayerPlugin;
 //use music::BackgroundMusicPlugin;
-use health::HealthPlugin;
+//use health::HealthPlugin;
 use enemy::EnemyPlugin;
 
 const TITLE: &str = "Miner Pitfall!";
@@ -90,7 +90,7 @@ fn main() {
 		//.add_plugin(BackgroundMusicPlugin)
 		.add_plugin(PlayerPlugin)
 		.add_plugin(LevelPlugin)
-		.add_plugin(HealthPlugin)
+		//.add_plugin(HealthPlugin)
 		.add_plugin(EnemyPlugin)
 		// Run the game
 		.run();
