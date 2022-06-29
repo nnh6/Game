@@ -12,6 +12,7 @@ use crate::{
 	ACCEL_RATE,
 	PLAYER_SPEED,
 	JUMP_TIME,
+	MainCamera,
 	GameState,
 	loading::{
 		LoadingAssets,
@@ -193,7 +194,7 @@ fn animate_player(
 
 fn move_camera(
  	_player: Query<&Transform, With<Player>>,
- 	_camera: Query<&mut Transform, (Without<Player>, With<Camera>)>,
+ 	mut _camera: Query<&mut Transform, (Without<Player>, With<MainCamera>)>,
  ){
  	//let pt = player.single();
  	//let mut ct = camera.single_mut();
