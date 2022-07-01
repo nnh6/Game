@@ -30,7 +30,7 @@ const PLAYER_SPEED: f32 = 500.;
 const ACCEL_RATE: f32 = 5000.;
 const ANIM_TIME: f32 = 0.2;
 const JUMP_TIME: f32 = 0.1;
-const TILE_SIZE: f32 = 100.;
+const TILE_SIZE: f32 = 80.;
 
 static HEALTH: f32 = 100.;
 
