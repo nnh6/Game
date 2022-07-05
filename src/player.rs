@@ -20,6 +20,7 @@ use crate::{
 	},
 	level::Background,
 	level::Door,
+	level::Collider,
 	//level::HEALTH,
 	enemy::{
 		Enemy,
@@ -28,7 +29,10 @@ use crate::{
 };
 
 #[derive(Component)]
-pub struct Player;
+pub struct Player{
+	y_velocity: f32,
+	grounded: bool
+}
 
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(Timer);
@@ -75,7 +79,7 @@ impl Plugin for PlayerPlugin {
 					.after("move_player")
 					.with_system(animate_player)
 					.with_system(move_camera)
-					.with_system(jump)
+					//.with_system(jump)
 					.with_system(enter_door)
 					.with_system(check_enemy_collision)
 					.into()
@@ -112,69 +116,75 @@ fn spawn_player(
 				index: 0,
 				..default()
 			},
-			transform: Transform::from_xyz(0., -(WIN_H/2.) + (TILE_SIZE * 1.5), 900.),
+			transform: Transform::from_xyz(-400., -(WIN_H/2.) + (TILE_SIZE * 1.5), 900.),
 			..default()
 		})
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		.insert(Velocity::new())
 		.insert(JumpTimer(Timer::from_seconds(JUMP_TIME, false)))
-		.insert(Player);
+		.insert(Player{
+			grounded: false,
+			y_velocity: -1.0,
+		});
 }
 
 fn move_player(
 	time: Res<Time>,
 	input: Res<Input<KeyCode>>,
-	mut player: Query<(&mut Transform, &mut Velocity), (With<Player>, Without<Background>)>,
+	collision: Query<&Transform, (With<Collider>, Without<Player>)>,
+	mut player: Query<(&mut Player, &mut Transform)>,
 ){
-	let (mut transform, mut velocity) = player.single_mut();
+	let (mut player, mut transform) = player.single_mut();
 
-	let mut deltav = Vec2::splat(0.);
+	if player.grounded && input.just_pressed(KeyCode::Space) { //starts jump timer
+        player.y_velocity += JUMP_TIME * PLAYER_SPEED * TILE_SIZE * time.delta_seconds();
+	}
+
+	player.y_velocity += -3.0 * TILE_SIZE * time.delta_seconds();
+
+	let deltay = player.y_velocity * time.delta_seconds();
+
+	let mut deltax = 0.0;
 
 	if input.pressed(KeyCode::A) {
-		deltav.x -= 1.;
+		deltax -= 1. * PLAYER_SPEED * TILE_SIZE * time.delta_seconds();
 	}
 
 	if input.pressed(KeyCode::D) {
-		deltav.x += 1.;
+		deltax += 1. * PLAYER_SPEED * TILE_SIZE * time.delta_seconds();
 	}
 
-	let deltat = time.delta_seconds();
-	let acc = ACCEL_RATE * deltat;
-
-	// ** needed to dereference the borrow (type &mut Velocity), 
-	// and then access the contained valued (via derived Deref)
-	**velocity = if deltav.length() > 0. {
-		(**velocity + (deltav.normalize_or_zero() * acc)).clamp_length_max(PLAYER_SPEED)
-	}
-	else if velocity.length() > acc {
-		**velocity + (velocity.normalize_or_zero() * -acc)
-	}
-	else {
-		Vec2::splat(0.)
-	};
-	let change = **velocity * deltat;
-
-	let new_pos = transform.translation + Vec3::new(
-		change.x,
-		0.,
-		0.,
-	);
-	if new_pos.x >= -(WIN_W/2.) + TILE_SIZE/2.
-		&& new_pos.x <= (WIN_W/2. - TILE_SIZE/2.)
-	{
-		transform.translation = new_pos;
+	let target = transform.translation + Vec3::new(deltax, 0., 0.);
+	if check_tile_collision(target, &collision){
+		transform.translation = target;
 	}
 
-	let new_pos = transform.translation + Vec3::new(
-		0.,
-		change.y,
-		0.,
-	);
-	if new_pos.y >= -(WIN_H/2.) + (TILE_SIZE * 1.5)
-		&& new_pos.y <= WIN_H/2. - TILE_SIZE/2.
-	{
-		transform.translation = new_pos;
+	let target = transform.translation + Vec3::new(0., deltay, 0.);
+	if check_tile_collision(target, &collision){
+		transform.translation = target;
+		player.grounded = false;
+	}else{
+		player.y_velocity = 0.0;
+		player.grounded = true;
 	}
+}
+
+fn check_tile_collision(
+	pos: Vec3,
+	wall_collide: &Query<&Transform, (With<Collider>, Without<Player>)>
+) -> bool{
+	for wall in wall_collide.iter(){
+		let collision = collide(
+			pos,
+			Vec2::splat(TILE_SIZE * 0.9),
+			wall.translation,
+			Vec2::splat(TILE_SIZE)
+		);
+		if collision.is_some(){
+			return false;
+		}
+	}	
+	return true;
 }
 
 fn animate_player(
@@ -220,37 +230,37 @@ fn move_camera(
 
 
 
-fn jump(
-    time: Res<Time>,
-    mut player: Query<(&mut JumpTimer, &mut Velocity), (With<Player>, Without<Background>)>,
-    input: Res<Input<KeyCode>>,
-) {
-    // assume we have exactly one player that jumps with Spacebar
+// fn jump(
+//     time: Res<Time>,
+//     mut player: Query<(&mut JumpTimer, &mut Velocity), (With<Player>, Without<Background>)>,
+//     input: Res<Input<KeyCode>>,
+// ) {
+//     // assume we have exactly one player that jumps with Spacebar
     
-	let (mut jump, mut velocity) = player.single_mut();
+// 	let (mut jump, mut velocity) = player.single_mut();
 
 	
 
-    if input.just_pressed(KeyCode::Space) { //starts jump timer
-        jump.reset();
-	}
+//     if input.just_pressed(KeyCode::Space) { //starts jump timer
+//         jump.reset();
+// 	}
 
-	jump.tick(time.delta());
+// 	jump.tick(time.delta());
 
-    if jump.elapsed() == Duration::new(0,100000001) { //jump timer over gravity on
-		**velocity = Vec2::new(
-			0.,
-			-300.,
-		)
-	} else { //jump timer is on
-		**velocity = Vec2::new(
-			0.,
-			1500.
-		)
-	}
+//     if jump.elapsed() == Duration::new(0,100000001) { //jump timer over gravity on
+// 		**velocity = Vec2::new(
+// 			0.,
+// 			-300.,
+// 		)
+// 	} else { //jump timer is on
+// 		**velocity = Vec2::new(
+// 			0.,
+// 			1500.
+// 		)
+// 	}
 
-	//info!("{:?}",jump.duration());
-}
+// 	//info!("{:?}",jump.duration());
+// }
 
 fn enter_door(
 	mut commands: Commands,
