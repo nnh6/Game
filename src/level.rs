@@ -17,7 +17,8 @@ use crate::{
 	},
 };
 
-
+#[derive(Component)]
+pub struct Collider;
 
 #[derive(Component)]
 pub struct Brick;
@@ -55,7 +56,7 @@ fn load_level(
 	);
 	commands.insert_resource(BackgroundImage(bg_texture_handle));
 
-	let brick_handle = asset_server.load("bricks.png");
+	let brick_handle = asset_server.load("brick2.png");
 	loading_assets.0.insert(
 		brick_handle.clone_untyped(),
 		LoadingAssetInfo::for_handle(brick_handle.clone_untyped(), &asset_server),
@@ -117,7 +118,8 @@ fn setup_level(
 								},
 								..default()
 							})
-							.insert(Brick);
+							.insert(Brick)
+							.insert(Collider);
 
 						i += 1;
 					},

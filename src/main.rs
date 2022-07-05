@@ -10,30 +10,34 @@ mod loading;
 mod player;
 mod level;
 mod music;
-mod health;
+//mod health;
 mod enemy;
+mod start_menu;
 
 use loading::LoadingPlugin;
 use level::LevelPlugin;
 use player::PlayerPlugin;
 //use music::BackgroundMusicPlugin;
-use health::HealthPlugin;
+//use health::HealthPlugin;
 use enemy::EnemyPlugin;
+use start_menu::MainMenuPlugin;
 
 const TITLE: &str = "Miner Pitfall!";
 const WIN_W: f32 = 1280.;
 const WIN_H: f32 = 720.;
 
-const PLAYER_SPEED: f32 = 500.;
+const PLAYER_SPEED: f32 = 3.;
 const ACCEL_RATE: f32 = 5000.;
 const ANIM_TIME: f32 = 0.2;
-<<<<<<< Updated upstream
+
 const JUMP_TIME: f32 = 0.1;
 const TILE_SIZE: f32 = 100.;
-=======
+
 const JUMP_TIME: f32 = 30.;
 const TILE_SIZE: f32 = 80.;
->>>>>>> Stashed changes
+
+const JUMP_TIME: f32 = 55.0;
+const TILE_SIZE: f32 = 80.;
 
 static HEALTH: f32 = 100.;
 
@@ -54,6 +58,7 @@ struct PopupTimer {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum GameState {
+	MainMenu,
 	Loading,
 	Playing,
 	Credits,
@@ -79,6 +84,7 @@ fn main() {
 		})
 		.add_plugins(DefaultPlugins)
 		// Set initial state
+		//.add_loopless_state(GameState::MainMenu)
 		.add_loopless_state(GameState::Loading)
 		// Add general systems
 		.add_startup_system(setup_camera)
@@ -95,14 +101,19 @@ fn main() {
 		//.add_plugin(BackgroundMusicPlugin)
 		.add_plugin(PlayerPlugin)
 		.add_plugin(LevelPlugin)
-		.add_plugin(HealthPlugin)
+		//.add_plugin(HealthPlugin)
 		.add_plugin(EnemyPlugin)
+		.add_plugin(MainMenuPlugin)
 		// Run the game
 		.run();
 }
 
+#[derive(Component)]
+pub struct MainCamera;
+
 fn setup_camera(mut commands: Commands) {
-	commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+	let mut camera = OrthographicCameraBundle::new_2d();
+	commands.spawn_bundle(camera);
 }
 
 fn log_state_change(state: Res<CurrentState<GameState>>) {
@@ -140,6 +151,7 @@ fn despawn_all (
     query.for_each(|entity| {
         commands.entity(entity).despawn();
 	});
+	setup_camera(commands);
 }
 
 //fn display_health(){

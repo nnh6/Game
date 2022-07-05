@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use bevy::{
 	asset::LoadState,	
 	prelude::*,
+	ui::FocusPolicy
 };
 use iyes_loopless::prelude::*;
 
@@ -10,6 +11,7 @@ use crate::{
 	PROGRESS_HEIGHT,
 	PROGRESS_FRAME,
 	GameState,
+	MainCamera,
 };
 
 #[derive(Component)]
@@ -52,14 +54,16 @@ pub struct LoadingPlugin;
 impl Plugin for LoadingPlugin {
 	fn build (&self, app: &mut App) {
 		app.insert_resource(LoadingAssets(HashMap::new()))
+			//.add_system(handle_start_button)
 			.add_enter_system(GameState::Loading, setup_loading)
+			//.add_system(GameState::MainMenu)
 			.add_system(update_loading.run_in_state(GameState::Loading))
 			.add_exit_system(GameState::Loading, despawn_with::<LoadingProgressFrame>)
 			.add_exit_system(GameState::Loading, despawn_with::<LoadingProgress>);
 	}
 }
 
-fn setup_loading(mut commands: Commands) {
+fn setup_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands
 		.spawn()
 		.insert(LoadingProgressFrame)
@@ -78,7 +82,6 @@ fn setup_loading(mut commands: Commands) {
 			},
 			..default()
 		});
-
 	commands
 		.spawn()
 		.insert(LoadingProgress(0.))
@@ -94,6 +97,7 @@ fn setup_loading(mut commands: Commands) {
 			..default()
 		});	
 }
+
 
 fn update_loading(
 	mut commands: Commands,
@@ -121,7 +125,7 @@ fn update_loading(
 	if asset_server.get_group_load_state(loading_assets.keys().map(|h| h.id))
 		== LoadState::Loaded
 	{
-		commands.insert_resource(NextState(GameState::Playing));
+		commands.insert_resource(NextState(GameState::MainMenu));
 	}
 }
 
