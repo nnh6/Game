@@ -29,7 +29,8 @@ const WIN_H: f32 = 720.;
 const PLAYER_SPEED: f32 = 3.;
 const ACCEL_RATE: f32 = 5000.;
 const ANIM_TIME: f32 = 0.2;
-const JUMP_TIME: f32 = 500.0;
+
+const JUMP_TIME: f32 = 30.;
 const TILE_SIZE: f32 = 80.;
 
 static HEALTH: f32 = 100.;
