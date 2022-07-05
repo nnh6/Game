@@ -144,6 +144,7 @@ fn despawn_all (
     query.for_each(|entity| {
         commands.entity(entity).despawn();
 	});
+	setup_camera(commands);
 }
 
 //fn display_health(){
