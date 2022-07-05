@@ -17,7 +17,8 @@ use crate::{
 	},
 };
 
-
+#[derive(Component)]
+pub struct Collider;
 
 #[derive(Component)]
 pub struct Brick;
@@ -117,7 +118,8 @@ fn setup_level(
 								},
 								..default()
 							})
-							.insert(Brick);
+							.insert(Brick)
+							.insert(Collider);
 
 						i += 1;
 					},

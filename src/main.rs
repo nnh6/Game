@@ -26,10 +26,10 @@ const TITLE: &str = "Miner Pitfall!";
 const WIN_W: f32 = 1280.;
 const WIN_H: f32 = 720.;
 
-const PLAYER_SPEED: f32 = 500.;
+const PLAYER_SPEED: f32 = 3.;
 const ACCEL_RATE: f32 = 5000.;
 const ANIM_TIME: f32 = 0.2;
-const JUMP_TIME: f32 = 0.1;
+const JUMP_TIME: f32 = 55.0;
 const TILE_SIZE: f32 = 80.;
 
 static HEALTH: f32 = 100.;
@@ -144,6 +144,7 @@ fn despawn_all (
     query.for_each(|entity| {
         commands.entity(entity).despawn();
 	});
+	setup_camera(commands);
 }
 
 //fn display_health(){
