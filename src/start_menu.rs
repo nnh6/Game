@@ -12,8 +12,9 @@ pub struct MainMenuPlugin;
 impl Plugin for MainMenuPlugin{
     fn build(&self, app: &mut App){
         app.add_enter_system(GameState::MainMenu, setup_menu)
-        .add_system(handle_start_button.run_in_state(GameState::MainMenu));
-        //.add_enter_system(GameState::Playing, despawn_all);
+        .add_system(handle_start_button.run_in_state(GameState::MainMenu))
+		//.add_system_set(SystemSet::on_pause(GameState::MainMenu).with_system(despawn_menu));
+        .add_enter_system(GameState::Playing, despawn_menu);
     }
 }
 
@@ -98,12 +99,9 @@ fn handle_start_button(
 	}
 }
 
-fn despawn_all (
-    mut commands: Commands,
-    query: Query<Entity, With<Transform>>,
-)
+fn despawn_menu(mut commands: Commands, button_query: Query<Entity, With<Button>>) 
 {
-    query.for_each(|entity| {
-        commands.entity(entity).despawn();
-	});
+    for ent in button_query.iter(){
+		commands.entity(ent).despawn_recursive();
+	}
 }
