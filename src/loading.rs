@@ -54,98 +54,13 @@ pub struct LoadingPlugin;
 impl Plugin for LoadingPlugin {
 	fn build (&self, app: &mut App) {
 		app.insert_resource(LoadingAssets(HashMap::new()))
-			//.add_enter_system(GameState::MainMenu, setup_menu)
 			//.add_system(handle_start_button)
 			.add_enter_system(GameState::Loading, setup_loading)
+			//.add_system(GameState::MainMenu)
 			.add_system(update_loading.run_in_state(GameState::Loading))
 			.add_exit_system(GameState::Loading, despawn_with::<LoadingProgressFrame>)
 			.add_exit_system(GameState::Loading, despawn_with::<LoadingProgress>);
 	}
-}
-
-
-// impl Plugin for MainMenuPlugin{
-// 	fn build(&self, app: &mut App){
-// 		app.add_startup_system(setup_menu);
-// 	}
-// }
-struct UiAssets{
-	font: Handle<Font>,
-	button: Handle<Image>,
-	button_pressed: Handle<Image>
-}
-fn handle_start_button(
-	mut commands: Commands,
-	interaction_query: Query<(&Children, &Interaction), Changed<Interaction>>,
-	mut image_query: Query<&mut UiImage>,
-	ui_assets: Res<UiAssets>,
-	//ascii: Rec<AsciiSheet>
-){
-	for(children, interaction) in interaction_query.iter(){
-		let child = children.iter().next().unwrap();
-		let mut image = image_query.get_mut(*child).unwrap();
-
-		match interaction{
-			Interaction:: Clicked => {
-				image.0 = ui_assets.button_pressed.clone();
-				commands.insert_resource(NextState(GameState::Loading));
-			}
-			Interaction::Hovered | Interaction:: None=>{
-				image.0 = ui_assets.button.clone();
-			}
-		}
-	}
-}
-fn setup_menu(mut commands: Commands, assets: Res<AssetServer>){
-	let ui_assets = UiAssets{
-		font: assets.load("quattrocentosans-bold.ttf"),
-		button: assets.load("button.png"),
-		button_pressed: assets.load("button_pressed.png")
-	};
-
-    commands.spawn_bundle(UiCameraBundle::default());
-    commands.spawn_bundle(ButtonBundle{
-        style: Style{
-            align_self: AlignSelf::Center,
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            size: Size::new(Val::Percent(20.0), Val::Percent(10.0)),
-            margin: Rect::all(Val::Auto),
-            ..Default::default()
-        },
-		color: Color::NONE.into(),
-        ..Default::default()
-    })
-	.with_children(|parent|{
-		parent.spawn_bundle(ImageBundle{
-			style:Style{
-				size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-				justify_content: JustifyContent::Center,
-				align_items: AlignItems::Center,
-				..Default::default()
-			},
-			image: ui_assets.button.clone().into(),
-			..Default::default()
-		})
-			.insert(FocusPolicy::Pass)
-			.with_children(|parent|{
-				parent.spawn_bundle(TextBundle{
-					text: Text::with_section(
-						"Start Game",
-						TextStyle{
-							font: ui_assets.font.clone(),
-							font_size: 40.0,
-							color: Color::rgb(0.9, 0.9, 0.9),
-						},
-						Default::default(),
-					),
-					focus_policy: FocusPolicy::Pass,
-					..Default::default()
-				});
-			});
-			
-	}); 
-	commands.insert_resource(ui_assets);
 }
 
 fn setup_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -210,7 +125,7 @@ fn update_loading(
 	if asset_server.get_group_load_state(loading_assets.keys().map(|h| h.id))
 		== LoadState::Loaded
 	{
-		commands.insert_resource(NextState(GameState::Playing));
+		commands.insert_resource(NextState(GameState::MainMenu));
 	}
 }
 
