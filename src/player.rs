@@ -31,6 +31,7 @@ use crate::{
 #[derive(Component)]
 pub struct Player{
 	y_velocity: f32,
+	x_velocity: f32,
 	grounded: bool
 }
 
@@ -125,6 +126,7 @@ fn spawn_player(
 		.insert(Player{
 			grounded: false,
 			y_velocity: -1.0,
+			x_velocity: 0.
 		});
 }
 
@@ -140,10 +142,10 @@ fn move_player(
         player.y_velocity += JUMP_TIME * PLAYER_SPEED * TILE_SIZE * time.delta_seconds();
 	}
 
-	player.y_velocity += -3.0 * TILE_SIZE * time.delta_seconds();
+	player.y_velocity += -24.0 * TILE_SIZE * time.delta_seconds();
 
 	let deltay = player.y_velocity * time.delta_seconds();
-
+	
 	let mut deltax = 0.0;
 
 	if input.pressed(KeyCode::A) {
@@ -153,7 +155,7 @@ fn move_player(
 	if input.pressed(KeyCode::D) {
 		deltax += 1. * PLAYER_SPEED * TILE_SIZE * time.delta_seconds();
 	}
-
+	player.x_velocity = deltax;
 	let target = transform.translation + Vec3::new(deltax, 0., 0.);
 	if check_tile_collision(target, &collision){
 		transform.translation = target;
@@ -192,7 +194,7 @@ fn animate_player(
 	texture_atlases: Res<Assets<TextureAtlas>>,
 	mut player: Query<
 		(
-			&Velocity,
+			&mut Player,
 			&mut TextureAtlasSprite,
 			&Handle<TextureAtlas>,
 			&mut AnimationTimer,
@@ -200,7 +202,8 @@ fn animate_player(
 		With<Player>
 	>,
 ){
-	let (velocity, mut sprite, texture_atlas_handle, mut timer) = player.single_mut();
+	let (player, mut sprite, texture_atlas_handle, mut timer) = player.single_mut();
+	let velocity = Vec2::new(player.x_velocity, player.y_velocity);
 	if velocity.cmpne(Vec2::ZERO).any() {
 		timer.tick(time.delta());
 
