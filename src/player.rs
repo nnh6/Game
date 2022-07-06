@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use std::convert::From;
-use std::time::Duration;
+//use std::time::Duration;
 use bevy::sprite::collide_aabb::collide;
 use crate::{
 	//LEVEL_LEN,
@@ -9,7 +9,7 @@ use crate::{
 	WIN_H,
 	TILE_SIZE,
 	ANIM_TIME,
-	ACCEL_RATE,
+	//ACCEL_RATE,
 	PLAYER_SPEED,
 	JUMP_TIME,
 	HEALTH,
@@ -18,7 +18,7 @@ use crate::{
 		LoadingAssets,
 		LoadingAssetInfo,
 	},
-	level::Background,
+	//level::Background,
 	level::Door,
 	level::Collider,
 	//level::HEALTH,
@@ -186,7 +186,7 @@ fn check_tile_collision(
 			return false;
 		}
 	}	
-	return true;
+	true
 }
 
 fn animate_player(
