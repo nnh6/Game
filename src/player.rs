@@ -25,14 +25,15 @@ use crate::{
 	enemy::{
 		Enemy,
 		EnemySheet
-	}
+	}, player
 };
 
 #[derive(Component)]
 pub struct Player{
 	y_velocity: f32,
 	x_velocity: f32,
-	grounded: bool
+	grounded: bool,
+	health: f32
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -126,7 +127,8 @@ fn spawn_player(
 		.insert(Player{
 			grounded: false,
 			y_velocity: -1.0,
-			x_velocity: 0.
+			x_velocity: 0.,
+			health: 100. //HEALTH
 		});
 }
 
@@ -284,14 +286,25 @@ fn check_enemy_collision(
 	player: Query<&Transform, With<Player>>,
 	_enemy_sheet: Res<EnemySheet>,
 	enemy: Query<&Transform, With<Enemy>>,
+	
 ) {
 	let player_transform = player.single();
 	let enemy_transform = enemy.single();
 	if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
+
 		info!("ouch");
 		//let HEALTH = HEALTH - 5;
 		//after health changed, update state of health sprite
 	}
+}
+
+fn damage(
+	mut player: Query<(&mut Player, &mut Transform)>,
+){
+	let (mut player, mut transform) = player.single_mut();
+	player.health = player.health -5.;
+	info!("Health: {}", player.health);
+
 }
 
 ///////////////////////////////////////
