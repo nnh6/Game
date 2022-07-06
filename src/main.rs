@@ -106,7 +106,7 @@ fn main() {
 pub struct MainCamera;
 
 fn setup_camera(mut commands: Commands) {
-	let mut camera = OrthographicCameraBundle::new_2d();
+	let camera = OrthographicCameraBundle::new_2d();
 	commands.spawn_bundle(camera);
 }
 
