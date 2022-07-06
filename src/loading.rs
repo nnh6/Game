@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use bevy::{
 	asset::LoadState,	
 	prelude::*,
-	ui::FocusPolicy
+	//ui::FocusPolicy
 };
 use iyes_loopless::prelude::*;
 
@@ -11,7 +11,7 @@ use crate::{
 	PROGRESS_HEIGHT,
 	PROGRESS_FRAME,
 	GameState,
-	MainCamera,
+	//MainCamera,
 };
 
 #[derive(Component)]
@@ -63,7 +63,7 @@ impl Plugin for LoadingPlugin {
 	}
 }
 
-fn setup_loading(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_loading(mut commands: Commands, _asset_server: Res<AssetServer>) {
 	commands
 		.spawn()
 		.insert(LoadingProgressFrame)
