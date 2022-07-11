@@ -45,6 +45,7 @@ enum GameState {
 	Loading,
 	Playing,
 	Credits,
+	GameOver,
 }
 
 fn main() {
@@ -75,6 +76,9 @@ fn main() {
 			display_slides
 				.run_in_state(GameState::Credits)
 			)
+		.add_system(display_game_over
+						.run_in_state(GameState::GameOver)
+					)
 		.add_enter_system(GameState::Credits, despawn_all)
 		.add_system(log_state_change)
 		// Add all subsystems
@@ -130,4 +134,17 @@ fn despawn_all (
         commands.entity(entity).despawn();
 	});
 	setup_camera(commands);
+}
+
+fn display_game_over (
+	mut commands: Commands,
+	asset_server: Res<AssetServer>
+) {
+	commands
+		.spawn_bundle(SpriteBundle {
+			texture: asset_server.load("gameover.png"),
+			transform: Transform::from_xyz(0., 0., 900.),
+			..default()
+		})
+		.insert(Slide);
 }
