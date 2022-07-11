@@ -95,7 +95,7 @@ fn load_player_sheet(
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	mut loading_assets: ResMut<LoadingAssets>,
 ) {
-	let player_handle = asset_server.load("walking-resize.png");
+	let player_handle = asset_server.load("minerwalk_320.png");
 	loading_assets.insert(
 		player_handle.clone_untyped(),
 		LoadingAssetInfo::for_handle(player_handle.clone_untyped(), &asset_server),
