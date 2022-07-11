@@ -10,7 +10,7 @@ mod loading;
 mod player;
 mod level;
 mod music;
-//mod health;
+
 mod enemy;
 mod start_menu;
 
@@ -59,6 +59,7 @@ enum GameState {
 }
 
 fn main() {
+
 	App::new()
 		// Setup Bevy and game window
 		.insert_resource(WindowDescriptor {

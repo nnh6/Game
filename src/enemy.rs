@@ -17,6 +17,7 @@ use crate::{
 		LoadingAssets,
 		LoadingAssetInfo,
 	},
+	player::Health,
 	//level::Background,
 };
 
@@ -69,5 +70,6 @@ fn spawn_enemy(
 		//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		//.insert(Velocity::new())
 		//.insert(JumpTimer(Timer::from_seconds(JUMP_TIME, false)))
+		.insert(Health::new())
 		.insert(Enemy);
 }

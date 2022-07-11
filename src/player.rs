@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use std::convert::From;
+use std::time::Duration;
 //use std::time::Duration;
 use bevy::sprite::collide_aabb::collide;
+use bevy::sprite::collide_aabb::Collision;
 use crate::{
 	//LEVEL_LEN,
 	WIN_W,
@@ -25,7 +27,7 @@ use crate::{
 	enemy::{
 		Enemy,
 		EnemySheet
-	}, player
+	},
 };
 
 #[derive(Component)]
@@ -33,14 +35,41 @@ pub struct Player{
 	y_velocity: f32,
 	x_velocity: f32,
 	grounded: bool,
-	health: f32
 }
 
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(Timer);
 
+#[derive(Component)]
+pub struct Health {
+	health: f32,
+}
+
+impl Health {
+	pub fn new() -> Self {
+		Self {health: 100.}
+	}
+}
+
+#[derive(Deref, DerefMut)]
+pub struct HealthAtlas(Handle<TextureAtlas>);
+
 #[derive(Component, Deref, DerefMut)]
-pub struct Velocity(Vec2);
+pub struct Velocity {
+	velocity: Vec2,
+}
+
+impl Velocity {
+	fn new() -> Self {
+		Self {velocity: Vec2::splat(0.)}
+	}
+}
+
+impl From<Vec2> for Velocity {
+	fn from(velocity: Vec2) -> Self {
+		Self {velocity}
+	}
+}
 
 #[derive(Deref, DerefMut)]
 pub struct PlayerSheet(Handle<TextureAtlas>);
@@ -48,28 +77,14 @@ pub struct PlayerSheet(Handle<TextureAtlas>);
 #[derive(Component,Deref, DerefMut)]
 pub struct JumpTimer(Timer);
 
-//////////////////////////////////////////////////////////////////
-#[derive(Component)]
-pub struct Health; //
-/////////////////////////////////////////////////////////////////
-#[derive(Deref, DerefMut)]
-pub struct HealthAtlas(Handle<TextureAtlas>);
-
-impl Velocity {
-	fn new() -> Self {
-		Self(Vec2::splat(0.))
-	}
-}
-
-impl From<Vec2> for Velocity {
-	fn from(velocity: Vec2) -> Self {
-		Self(velocity)
-	}
-}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
+struct FixedStep;
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
 	fn build (&self, app: &mut App) {
+		let mut every_second = SystemStage::parallel();
+		every_second.add_system(check_enemy_collision.run_in_state(GameState::Playing));
 		app.add_enter_system(GameState::Loading, load_player_sheet)
 			.add_enter_system(GameState::Playing, spawn_player)
 			.add_enter_system(GameState::Loading, load_health_sheet)//;//////////////
@@ -80,11 +95,15 @@ impl Plugin for PlayerPlugin {
 					.run_in_state(GameState::Playing)
 					.after("move_player")
 					.with_system(animate_player)
-					.with_system(move_camera)
-					//.with_system(jump)
 					.with_system(enter_door)
-					.with_system(check_enemy_collision)
+					.with_system(swing_axe)
 					.into()
+			)
+			.add_stage_before(
+				CoreStage::Update,
+				FixedStep,
+				FixedTimestepStage::new(Duration::from_secs(1))
+					.with_stage(every_second)
 			);
 	}
 }
@@ -124,11 +143,11 @@ fn spawn_player(
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		.insert(Velocity::new())
 		.insert(JumpTimer(Timer::from_seconds(JUMP_TIME, false)))
+		.insert(Health::new())
 		.insert(Player{
 			grounded: false,
 			y_velocity: -1.0,
 			x_velocity: 0.,
-			health: 100. //HEALTH
 		});
 }
 
@@ -216,57 +235,6 @@ fn animate_player(
 	}
 }
 
-fn move_camera(
- 	_player: Query<&Transform, With<Player>>,
- 	mut _camera: Query<&mut Transform, (Without<Player>, With<Camera>)>,
- ){
- 	//let pt = player.single();
- 	//let mut ct = camera.single_mut();
-
- 	//ct.translation.x = pt.translation.x.clamp(0., LEVEL_LEN - WIN_W);
-	//display_health();
- }
-
-//fn display_health(
-	
-//) {
-	
-//}
-
-
-
-// fn jump(
-//     time: Res<Time>,
-//     mut player: Query<(&mut JumpTimer, &mut Velocity), (With<Player>, Without<Background>)>,
-//     input: Res<Input<KeyCode>>,
-// ) {
-//     // assume we have exactly one player that jumps with Spacebar
-    
-// 	let (mut jump, mut velocity) = player.single_mut();
-
-	
-
-//     if input.just_pressed(KeyCode::Space) { //starts jump timer
-//         jump.reset();
-// 	}
-
-// 	jump.tick(time.delta());
-
-//     if jump.elapsed() == Duration::new(0,100000001) { //jump timer over gravity on
-// 		**velocity = Vec2::new(
-// 			0.,
-// 			-300.,
-// 		)
-// 	} else { //jump timer is on
-// 		**velocity = Vec2::new(
-// 			0.,
-// 			1500.
-// 		)
-// 	}
-
-// 	//info!("{:?}",jump.duration());
-// }
-
 fn enter_door(
 	mut commands: Commands,
 	player: Query<&Transform, With<Player>>,
@@ -282,32 +250,56 @@ fn enter_door(
 	
 }
 
-fn check_enemy_collision(
-	player: Query<&Transform, With<Player>>,
+pub fn check_enemy_collision(
 	_enemy_sheet: Res<EnemySheet>,
-	enemy: Query<&Transform, With<Enemy>>,
-	
+	enemy_query: Query<(&Transform, &Health), (With<Enemy>, Without<Player>)>,
+	mut player_query: Query<(&Transform, &mut Health), (With<Player>, Without<Enemy>)>
 ) {
-	let player_transform = player.single();
-	let enemy_transform = enemy.single();
+	let (player_transform, mut player_health) = player_query.single_mut();
+	let (enemy_transform, enemy_health) = enemy_query.single();
 	if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
-
-		info!("ouch");
-		//let HEALTH = HEALTH - 5;
-		//after health changed, update state of health sprite
+		player_health.health = player_health.health - 20.;
+		info!("{}", player_health.health);
 	}
 }
 
-fn damage(
-	mut player: Query<(&mut Player, &mut Transform)>,
-){
-	let (mut player, mut transform) = player.single_mut();
-	player.health = player.health -5.;
-	info!("Health: {}", player.health);
-
+pub fn swing_axe(
+	mut enemy_entity: Query<Entity, With<Enemy>>,
+	mut enemy_query: Query<(&Transform, &mut Health), (With<Enemy>, Without<Player>)>,
+	player_query: Query<(&Transform, &mut Health), (With<Player>, Without<Enemy>)>,
+	input: Res<Input<KeyCode>>,
+	mut commands: Commands,
+) {
+	let (player_transform, player_health) = player_query.single();
+	let (enemy_transform, mut enemy_health) = enemy_query.single_mut();
+	let collision = collide(player_transform.translation, Vec2::splat(150.), enemy_transform.translation, Vec2::splat(50.));
+	if input.just_pressed(KeyCode::E) && collision.is_some() {
+		match collision.unwrap() {
+			Collision::Left => {
+				enemy_health.health = enemy_health.health - 20.;
+				info!("{}", enemy_health.health);
+				if enemy_health.health <= 0. {
+					enemy_entity.for_each(|entity| {
+						commands.entity(entity).despawn();
+					})
+				}
+			}
+			Collision::Inside => {
+				enemy_health.health = enemy_health.health - 20.;
+				info!("{}", enemy_health.health);
+				if enemy_health.health <= 0. {
+					enemy_entity.for_each(|entity| {
+						commands.entity(entity).despawn();
+					})
+				}
+			}
+			_ => {
+				//nothing
+			}
+		}
+	}
 }
 
-///////////////////////////////////////
 fn load_health_sheet(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
