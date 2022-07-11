@@ -4,39 +4,28 @@ use bevy::{
 };
 use std::time::Duration;
 use iyes_loopless::prelude::*;
-//use bevy_kira_audio::AudioPlugin;
 
 mod loading;
 mod player;
 mod level;
 mod music;
-//mod health;
+
 mod enemy;
 mod start_menu;
 
 use loading::LoadingPlugin;
 use level::LevelPlugin;
 use player::PlayerPlugin;
-//use music::BackgroundMusicPlugin;
-//use health::HealthPlugin;
 use enemy::EnemyPlugin;
 use start_menu::MainMenuPlugin;
 
 const TITLE: &str = "Miner Pitfall!";
 const WIN_W: f32 = 1280.;
 const WIN_H: f32 = 720.;
-
 const PLAYER_SPEED: f32 = 3.;
-const ACCEL_RATE: f32 = 5000.;
 const ANIM_TIME: f32 = 0.2;
-
 const JUMP_TIME: f32 = 150.;
 const TILE_SIZE: f32 = 80.;
-
-static HEALTH: f32 = 100.;
-
-//const LEVEL_LEN: f32 = 1280.;
-
 const PROGRESS_LENGTH: f32 = 120.;
 const PROGRESS_HEIGHT: f32 = 20.;
 const PROGRESS_FRAME: f32 = 5.;
@@ -59,6 +48,7 @@ enum GameState {
 }
 
 fn main() {
+
 	App::new()
 		// Setup Bevy and game window
 		.insert_resource(WindowDescriptor {
@@ -78,7 +68,6 @@ fn main() {
 		})
 		.add_plugins(DefaultPlugins)
 		// Set initial state
-		//.add_loopless_state(GameState::MainMenu)
 		.add_loopless_state(GameState::Loading)
 		// Add general systems
 		.add_startup_system(setup_camera)
@@ -89,16 +78,11 @@ fn main() {
 		.add_enter_system(GameState::Credits, despawn_all)
 		.add_system(log_state_change)
 		// Add all subsystems
-		//############### currently greyed out everything but player ######
-		//.add_plugin(AudioPlugin)
 		.add_plugin(LoadingPlugin)
-		//.add_plugin(BackgroundMusicPlugin)
 		.add_plugin(PlayerPlugin)
 		.add_plugin(LevelPlugin)
-		//.add_plugin(HealthPlugin)
 		.add_plugin(EnemyPlugin)
 		.add_plugin(MainMenuPlugin)
-		// Run the game
 		.run();
 }
 
@@ -147,7 +131,3 @@ fn despawn_all (
 	});
 	setup_camera(commands);
 }
-
-//fn display_health(){
-//	println!("{}", &HEALTH);
-//}
