@@ -2,28 +2,22 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use std::convert::From;
 use std::time::Duration;
-//use std::time::Duration;
 use bevy::sprite::collide_aabb::collide;
 use bevy::sprite::collide_aabb::Collision;
 use crate::{
-	//LEVEL_LEN,
 	WIN_W,
 	WIN_H,
 	TILE_SIZE,
 	ANIM_TIME,
-	//ACCEL_RATE,
 	PLAYER_SPEED,
 	JUMP_TIME,
-	HEALTH,
 	GameState,
 	loading::{
 		LoadingAssets,
 		LoadingAssetInfo,
 	},
-	//level::Background,
 	level::Door,
 	level::Collider,
-	//level::HEALTH,
 	enemy::{
 		Enemy,
 		EnemySheet
@@ -87,8 +81,8 @@ impl Plugin for PlayerPlugin {
 		every_second.add_system(check_enemy_collision.run_in_state(GameState::Playing));
 		app.add_enter_system(GameState::Loading, load_player_sheet)
 			.add_enter_system(GameState::Playing, spawn_player)
-			.add_enter_system(GameState::Loading, load_health_sheet)//;//////////////
-			.add_enter_system(GameState::Playing, spawn_health)//;/////////////
+			.add_enter_system(GameState::Loading, load_health_sheet)
+			.add_enter_system(GameState::Playing, spawn_health)
 			.add_system(move_player.run_in_state(GameState::Playing).label("move_player"))
 			.add_system_set(
 				ConditionSet::new()
@@ -252,49 +246,46 @@ fn enter_door(
 
 pub fn check_enemy_collision(
 	_enemy_sheet: Res<EnemySheet>,
-	enemy_query: Query<(&Transform, &Health), (With<Enemy>, Without<Player>)>,
+	enemy_query: Query<&Transform, (With<Enemy>, Without<Player>)>,
 	mut player_query: Query<(&Transform, &mut Health), (With<Player>, Without<Enemy>)>
 ) {
 	let (player_transform, mut player_health) = player_query.single_mut();
-	let (enemy_transform, enemy_health) = enemy_query.single();
-	if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
-		player_health.health = player_health.health - 20.;
-		info!("{}", player_health.health);
+	for enemy_transform in enemy_query.iter() {
+		if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
+			player_health.health = player_health.health - 20.;
+			info!("{}", player_health.health);
+		}
 	}
 }
 
 pub fn swing_axe(
-	mut enemy_entity: Query<Entity, With<Enemy>>,
-	mut enemy_query: Query<(&Transform, &mut Health), (With<Enemy>, Without<Player>)>,
-	player_query: Query<(&Transform, &mut Health), (With<Player>, Without<Enemy>)>,
+	mut enemy_query: Query<(Entity, &Transform, &mut Health), (With<Enemy>, Without<Player>)>,
+	player_query: Query<&Transform, (With<Player>, Without<Enemy>)>,
 	input: Res<Input<KeyCode>>,
 	mut commands: Commands,
 ) {
-	let (player_transform, player_health) = player_query.single();
-	let (enemy_transform, mut enemy_health) = enemy_query.single_mut();
-	let collision = collide(player_transform.translation, Vec2::splat(150.), enemy_transform.translation, Vec2::splat(50.));
-	if input.just_pressed(KeyCode::E) && collision.is_some() {
-		match collision.unwrap() {
-			Collision::Left => {
-				enemy_health.health = enemy_health.health - 20.;
-				info!("{}", enemy_health.health);
-				if enemy_health.health <= 0. {
-					enemy_entity.for_each(|entity| {
-						commands.entity(entity).despawn();
-					})
+	let player_transform = player_query.single();
+	for (enemy_entity, enemy_transform, mut enemy_health) in enemy_query.iter_mut() {
+		let collision = collide(player_transform.translation, Vec2::splat(150.), enemy_transform.translation, Vec2::splat(50.));
+		if input.just_pressed(KeyCode::E) && collision.is_some() {
+			match collision.unwrap() {
+				Collision::Left => {
+					enemy_health.health = enemy_health.health - 20.;
+					info!("{}", enemy_health.health);
+					if enemy_health.health <= 0. {
+						commands.entity(enemy_entity).despawn();
+					}
 				}
-			}
-			Collision::Inside => {
-				enemy_health.health = enemy_health.health - 20.;
-				info!("{}", enemy_health.health);
-				if enemy_health.health <= 0. {
-					enemy_entity.for_each(|entity| {
-						commands.entity(entity).despawn();
-					})
+				Collision::Inside => {
+					enemy_health.health = enemy_health.health - 20.;
+					info!("{}", enemy_health.health);
+					if enemy_health.health <= 0. {
+						commands.entity(enemy_entity).despawn();
+					}
 				}
-			}
-			_ => {
-				//nothing
+				_ => {
+					//nothing
+				}
 			}
 		}
 	}
@@ -337,6 +328,7 @@ fn spawn_health(
 
 }
 
+/*
 fn update_health(
 	texture_atlases: Res<Assets<TextureAtlas>>,
 	mut health: Query<
@@ -352,4 +344,4 @@ fn update_health(
 	let hs_len : usize = texture_atlas.textures.len() as usize;
 	let c_health : usize = (HEALTH/10.).round() as usize;
 	sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
-}
+} */
