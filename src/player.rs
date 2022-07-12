@@ -351,37 +351,29 @@ fn spawn_health(
 
 
 fn update_health(
+	player: Query<(Entity, &Health, &Transform), With<Player>>, 
 	texture_atlases: Res<Assets<TextureAtlas>>,
-	//player: Query<(Entity, &mut Health), (With<Player>)>,
 	mut health: Query<
 		(
-			&mut Health,
+			&Health, //&mut Health,
 			&mut TextureAtlasSprite,
 			&Handle<TextureAtlas>,
 		),
 		With<Health>
 	>,
 ){//not completed
-	
-	//let mut player_health = 55.;//player.single(); //this is the proble, line...
+	if(!player.is_empty()){
+	let (player, p_health, transform) = player.single();
 
-
-	
-
-	
-	//info!("health updated: {:?}", player_health.health);
 	for (health, mut sprite, texture_atlas_handle) in health.iter_mut() {
 		let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-		let hs_len : f32 = texture_atlas.textures.len() as f32;
-		//let c_health : f32 = (player_health/10.) as f32; //(player_health.health/10.).round() as f32;
-		//sprite.index = (hs_len - c_health).round() as usize; //Use health to determine the index of the health sprite to show
-		//health.index = (health.index + 1) % texture_atlas.textures.len();
-
-			//if timer.just_finished() {
-			//	let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-			//	sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
-			//}
-		//info!("index: {}", sprite.index);
-		//player_health = player_health - 1.;
+			if sprite.index < texture_atlas.textures.len() as usize{
+				let hs_len : f32 = 10.0;//texture_atlas.textures.len() as f32;
+				let c_health : f32 = (p_health.health/10.);// % (texture_atlas.textures.len() as f32); //(player_health.health/10.).round() as f32;
+				info!("{}", (hs_len - c_health).round() as usize);
+				
+				sprite.index = (sprite.index + (hs_len - c_health).round() as usize) % texture_atlas.textures.len() as usize; //Use health to determine the index of the health sprite to show
+			}
+		}
 	}
-} 
+}
