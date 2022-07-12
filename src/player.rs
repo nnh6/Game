@@ -35,7 +35,7 @@ pub struct Player{
 pub struct AnimationTimer(Timer);
 
 #[derive(Component)]
-pub struct Health {
+pub struct Health{
 	health: f32,
 }
 
@@ -78,7 +78,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
 	fn build (&self, app: &mut App) {
 		let mut every_second = SystemStage::parallel();
-		every_second.add_system(check_enemy_collision.run_in_state(GameState::Playing));
+		every_second.add_system(check_enemy_collision.run_in_state(GameState::Playing));//.add_system(update_health.run_in_state(GameState::Playing));
 		app.add_enter_system(GameState::Loading, load_player_sheet)
 			.add_enter_system(GameState::Playing, spawn_player)
 			.add_enter_system(GameState::Loading, load_health_sheet)
@@ -90,6 +90,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(animate_player)
 					.with_system(enter_door)
 					.with_system(swing_axe)
+					.with_system(update_health) //health sprite
 					.into()
 			)
 			.add_stage_before(
@@ -249,12 +250,23 @@ pub fn check_enemy_collision(
 	_enemy_sheet: Res<EnemySheet>,
 	enemy_query: Query<&Transform, (With<Enemy>, Without<Player>)>,
 	mut player_query: Query<(Entity, &Transform, &mut Health), (With<Player>, Without<Enemy>)>,
+	//mut health: Query<(&mut TextureAtlasSprite,&Handle<TextureAtlas>,),With<Health>>,
+	//texture_atlases: Res<Assets<TextureAtlas>>,
 	mut commands: Commands,
 ) {
 	let (player_entity, player_transform, mut player_health) = player_query.single_mut();
+	//let (mut sprite, texture_atlas_handle) = health.single_mut();
+
 	for enemy_transform in enemy_query.iter() {
 		if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
 			player_health.health = player_health.health - 20.;
+			//call update health here for more efficiency 
+			
+			//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+			//let hs_len : usize = texture_atlas.textures.len() as usize;
+			//let c_health : usize = (player_health.health/10.).round() as usize;
+			//sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
+
 			info!("{}", player_health.health);
 			if player_health.health <= 0. {
 				//player dies
@@ -322,7 +334,7 @@ fn load_health_sheet(
  
 fn spawn_health(
 	mut commands: Commands,
-	health_sheet: Res<HealthAtlas>,
+	health_sheet: Res<HealthAtlas>, //healthsheet instead
 ){
 	commands
 		.spawn_bundle(SpriteSheetBundle {
@@ -331,26 +343,45 @@ fn spawn_health(
 				index: 0,
 				..default()
 			},
-			transform: Transform::from_xyz(-(WIN_W/2.) + (TILE_SIZE * 1.55)  , (WIN_H/2.) - (TILE_SIZE * 0.3), 900.),
+			transform: Transform::from_xyz(-(WIN_W/2.) + (TILE_SIZE * 1.8)  , (WIN_H/2.) - (TILE_SIZE * 0.3), 900.),
 			..default()
 		});
 
 }
 
-/*
+
 fn update_health(
 	texture_atlases: Res<Assets<TextureAtlas>>,
+	//player: Query<(Entity, &mut Health), (With<Player>)>,
 	mut health: Query<
 		(
+			&mut Health,
 			&mut TextureAtlasSprite,
 			&Handle<TextureAtlas>,
 		),
 		With<Health>
 	>,
 ){//not completed
-	let (mut sprite, texture_atlas_handle) = health.single_mut();
-	let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-	let hs_len : usize = texture_atlas.textures.len() as usize;
-	let c_health : usize = (HEALTH/10.).round() as usize;
-	sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
-} */
+	
+	//let mut player_health = 55.;//player.single(); //this is the proble, line...
+
+
+	
+
+	
+	//info!("health updated: {:?}", player_health.health);
+	for (health, mut sprite, texture_atlas_handle) in health.iter_mut() {
+		let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+		let hs_len : f32 = texture_atlas.textures.len() as f32;
+		//let c_health : f32 = (player_health/10.) as f32; //(player_health.health/10.).round() as f32;
+		//sprite.index = (hs_len - c_health).round() as usize; //Use health to determine the index of the health sprite to show
+		//health.index = (health.index + 1) % texture_atlas.textures.len();
+
+			//if timer.just_finished() {
+			//	let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+			//	sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
+			//}
+		//info!("index: {}", sprite.index);
+		//player_health = player_health - 1.;
+	}
+} 
