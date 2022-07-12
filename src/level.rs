@@ -15,6 +15,8 @@ use crate::{
 		LoadingAssets,
 		LoadingAssetInfo,
 	},
+	player::*,
+	enemy::*,
 };
 
 #[derive(Component)]
@@ -82,6 +84,7 @@ fn setup_level(
 	background_image: Res<BackgroundImage>,
 	door_image: Res<DoorImage>,
 	brick_sheet: Res<BrickSheet>,
+	enemy_sheet: Res<EnemySheet>,
 ) {
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -136,6 +139,23 @@ fn setup_level(
 							.insert(Door);
 
 						i += 1;
+					}
+					'E'=> {
+						commands
+							.spawn_bundle(SpriteSheetBundle {
+								texture_atlas: enemy_sheet.clone(),
+								sprite: TextureAtlasSprite {
+									index: 0,
+									..default()
+								},
+								transform: Transform {
+									translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
+									..default()
+								},
+								..default()
+							})
+							.insert(Health::new())
+							.insert(Enemy);
 					}
 					_=> {
 						//default case
