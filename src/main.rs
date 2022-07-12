@@ -33,6 +33,9 @@ const TILE_SIZE: f32 = 80.;
 const PROGRESS_LENGTH: f32 = 120.;
 const PROGRESS_HEIGHT: f32 = 20.;
 const PROGRESS_FRAME: f32 = 5.;
+const PLAYER_BOLT_SPRITE: &str = "bolt.png";
+const PLAYER_BOLT_SIZE: (f32, f32) = (9., 54.);
+const SPRITE_SCALE: f32 = 0.5;
 
 #[derive(Component)]
 struct Slide;
@@ -43,6 +46,9 @@ struct PopupTimer {
 	names: [&'static str; 8]
 }
 
+struct GameTextures{
+	player_bolt:Handle<Image>,
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum GameState {
 	MainMenu,
@@ -76,6 +82,7 @@ fn main() {
 		.add_loopless_state(GameState::Loading)
 		// Add general systems
 		.add_startup_system(setup_camera)
+		//.add_system(setup_textures)
 		.add_system(
 			display_slides
 				.run_in_state(GameState::Credits)
@@ -101,6 +108,15 @@ pub struct MainCamera;
 fn setup_camera(mut commands: Commands) {
 	let camera = OrthographicCameraBundle::new_2d();
 	commands.spawn_bundle(camera);
+}
+
+fn setup_textures(mut commands: Commands,
+				  asset_server: Res<AssetServer>,
+				)
+{
+	let game_textures = GameTextures{
+		player_bolt: asset_server.load(PLAYER_BOLT_SPRITE),
+	};			
 }
 
 fn log_state_change(state: Res<CurrentState<GameState>>) {
