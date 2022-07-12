@@ -11,6 +11,7 @@ use crate::{
 	ANIM_TIME,
 	PLAYER_SPEED,
 	JUMP_TIME,
+	FRAME_TIME,
 	GameState,
 	loading::{
 		LoadingAssets,
@@ -34,6 +35,7 @@ pub struct Player{
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(Timer);
 
+pub struct InvincibilityTimer(Timer);
 #[derive(Component)]
 pub struct Health {
 	health: f32,
@@ -87,6 +89,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(animate_player)
 					.with_system(enter_door)
 					.with_system(swing_axe)
+					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
 		app.add_enter_system(GameState::Loading, load_player_sheet)
@@ -105,8 +108,8 @@ impl Plugin for PlayerPlugin {
 			.add_stage_before(
 				CoreStage::Update,
 				"FixedStepFrame",
-				FixedTimestepStage::new(Duration::from_micros(16667)) // ~1 frame at 60 fps
-					.with_stage(every_frame)
+				FixedTimestepStage::from_stage(Duration::from_micros(16667), every_frame) // ~1 frame at 60 fps
+					
 				
 			)
 			.add_stage_before(
@@ -117,6 +120,11 @@ impl Plugin for PlayerPlugin {
 			);
 	}
 }
+
+/*fn my_fixed_update(info: Res<FixedTimestepInfo>) { //testing timestep
+    println!("Fixed timestep duration: {:?} ({} Hz).", info.timestep(), info.rate());
+    println!("Overstepped by {:?} ({}%).", info.remaining(), info.overstep() * 100.0);
+}**/
 
 fn load_player_sheet(
 	mut commands: Commands,
@@ -170,21 +178,21 @@ fn move_player(
 	for (mut player, mut transform) in player.iter_mut() {
 
 		if player.grounded && input.pressed(KeyCode::Space) { //changed to "pressed" instead of "just_pressed" because sometimes the jump wasn't working. Now you can hold space to jump when you hit the ground, but this seems acceptable.
-			player.y_velocity = JUMP_TIME * PLAYER_SPEED * TILE_SIZE * time.delta_seconds();
+			player.y_velocity = JUMP_TIME * PLAYER_SPEED * TILE_SIZE * FRAME_TIME;
 		}
 
-		player.y_velocity += -25.0 * TILE_SIZE * time.delta_seconds();
+		player.y_velocity += -25.0 * TILE_SIZE * FRAME_TIME;
 
-		let deltay = player.y_velocity * time.delta_seconds();
+		let deltay = player.y_velocity * FRAME_TIME;
 		
 		let mut deltax = 0.0;
 
 		if input.pressed(KeyCode::A) {
-			deltax -= 1. * PLAYER_SPEED * TILE_SIZE * time.delta_seconds();
+			deltax -= 1. * PLAYER_SPEED * TILE_SIZE * FRAME_TIME;
 		}
 
 		if input.pressed(KeyCode::D) {
-			deltax += 1. * PLAYER_SPEED * TILE_SIZE * time.delta_seconds();
+			deltax += 1. * PLAYER_SPEED * TILE_SIZE * FRAME_TIME;
 		}
 		player.x_velocity = deltax;
 		let target = transform.translation + Vec3::new(deltax, 0., 0.);
