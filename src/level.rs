@@ -156,6 +156,7 @@ fn setup_level(
 							})
 							.insert(Health::new())
 							.insert(Enemy);
+						i += 1;
 					}
 					_=> {
 						//default case
