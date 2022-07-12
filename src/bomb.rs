@@ -30,7 +30,7 @@ struct FixedStep;
 pub struct BombPlugin;
 impl Plugin for BombPlugin {
 	fn build (&self, app: &mut App) {
-		let mut every_second = SystemStage::parallel();
+		let every_second = SystemStage::parallel();
 		app.add_enter_system(GameState::Loading, load_bomb_sheet)
 		.add_enter_system(GameState::Playing, spawn_bomb)
 		.add_system_set(
@@ -100,13 +100,13 @@ fn animate_bomb( //not complete yet
 	mut commands: Commands,
 ){
 	//let (entity, mut bomb, mut sprite, texture_atlas_handle, mut timer) = bomb.single_mut();
-	for (entity, mut bomb, mut sprite, texture_atlas_handle, mut timer) in bomb.iter_mut() {
+	for (entity, _bomb, mut sprite, texture_atlas_handle, mut timer) in bomb.iter_mut() {
 		
 		info!("bomb"); //this doesn't go off
 		timer.tick(time.delta());
 		if timer.just_finished() {
 			let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-			sprite.index = (sprite.index + 1);
+			sprite.index += 1;
 			if sprite.index >= texture_atlas.textures.len(){
 				commands.entity(entity).despawn();
 			}

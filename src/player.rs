@@ -83,7 +83,7 @@ struct FixedStep;
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
 	fn build (&self, app: &mut App) {
-		let mut every_second = SystemStage::parallel();
+		let every_second = SystemStage::parallel();
 		let mut every_frame = SystemStage::parallel();
     //every_second.add_system(check_enemy_collision.run_in_state(GameState::Playing)); //.add_system(update_health.run_in_state(GameState::Playing));
 		//every_second.add_system(check_enemy_collision.run_in_state(GameState::Playing));
@@ -179,7 +179,7 @@ fn spawn_player(
 }
 
 fn move_player(
-	time: Res<Time>,
+	_time: Res<Time>,
 	input: Res<Input<KeyCode>>,
 	collision: Query<&Transform, (With<Collider>, Without<Player>)>,
 	mut player: Query<(&mut Player, &mut Transform)>,
@@ -280,36 +280,44 @@ fn enter_door(
 }
 
 pub fn check_enemy_collision(
+	mut commands: Commands,
 	_enemy_sheet: Res<EnemySheet>,
 	enemy_query: Query<&Transform, (With<Enemy>, Without<Player>)>,
-	mut player_query: Query<(Entity, &Transform, &mut Health, &mut InvincibilityTimer,), (With<Player>, Without<Enemy>)>,
+	mut player_query: Query<
+		(
+			Entity, 
+			&Transform, 
+			&mut Health, 
+			&mut InvincibilityTimer,
+		),
+		(With<Player>,
+		Without<Enemy>)
+		>,
 	//mut health: Query<(&mut TextureAtlasSprite,&Handle<TextureAtlas>,),With<Health>>,
 	//texture_atlases: Res<Assets<TextureAtlas>>,
-	mut commands: Commands,
+	
 ) {
 	let (player_entity, player_transform, mut player_health, mut inv_timer) = player_query.single_mut();
 	//let (mut sprite, texture_atlas_handle) = health.single_mut();
 
 	for enemy_transform in enemy_query.iter() {
-		if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
-			if inv_timer.finished(){
-				inv_timer.reset(); //reset the invincibility
-				player_health.health = player_health.health - 20.;
-				//call update health here for more efficiency 
-			
-				//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-				//let hs_len : usize = texture_atlas.textures.len() as usize;
-				//let c_health : usize = (player_health.health/10.).round() as usize;
-				//sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
-	
-				info!("{}", player_health.health);
-				if player_health.health <= 0. {
-					//player dies
-					commands.insert_resource(NextState(GameState::GameOver));
-					commands.entity(player_entity).despawn();
-				}
-			}
-		}
+		if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() && inv_timer.finished() {
+  				inv_timer.reset(); //reset the invincibility
+  				player_health.health -= 20.;
+  				//call update health here for more efficiency 
+  			
+  				//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+  				//let hs_len : usize = texture_atlas.textures.len() as usize;
+  				//let c_health : usize = (player_health.health/10.).round() as usize;
+  				//sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
+  	
+  				info!("{}", player_health.health);
+  				if player_health.health <= 0. {
+  					//player dies
+  					commands.insert_resource(NextState(GameState::GameOver));
+  					commands.entity(player_entity).despawn();
+  				}
+  			}
 	}
 	inv_timer.tick(Duration::from_secs_f32(FRAME_TIME)); //tick the invincibility timer after we're done checking collision
 }
@@ -324,17 +332,17 @@ pub fn swing_axe(
 	for player_transform in player_query.iter() {
 		for (enemy_entity, enemy_transform, mut enemy_health) in enemy_query.iter_mut() {
 			let collision = collide(player_transform.translation, Vec2::splat(150.), enemy_transform.translation, Vec2::splat(50.));
-			if input.just_pressed(KeyCode::E) && collision.is_some() {
+			if input.just_pressed(KeyCode::E){//} && collision.is_some() {
 				match collision.unwrap() {
 					Collision::Left => {
-						enemy_health.health = enemy_health.health - 20.;
+						enemy_health.health -= 20.;
 						info!("{}", enemy_health.health);
 						if enemy_health.health <= 0. {
 							commands.entity(enemy_entity).despawn();
 						}
 					}
 					Collision::Inside => {
-						enemy_health.health = enemy_health.health - 20.;
+						enemy_health.health -= 20.;
 						info!("{}", enemy_health.health);
 						if enemy_health.health <= 0. {
 							commands.entity(enemy_entity).despawn();
@@ -362,7 +370,7 @@ fn load_health_sheet(
 		LoadingAssetInfo::for_handle(hp_handle.clone_untyped(), &asset_server),
 	);
 
-	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::new(300., 35.), 2, 6);
+	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::new(300., 32.5), 2, 6);
 	let hp_atlas_handle = texture_atlases.add(hp_atlas);
 
 	commands.insert_resource(HealthAtlas(hp_atlas_handle));
@@ -430,7 +438,7 @@ fn update_health(
 	sprite.index = if player.health != 100.0 {
 		((100.0-player.health)/10.0).round() as usize
 	}else{
-		0 as usize
+		0_usize
 	}
 	//Use health to determine the index of the health sprite to show
 
