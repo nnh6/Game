@@ -78,12 +78,9 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
 	fn build (&self, app: &mut App) {
 		let mut every_second = SystemStage::parallel();
+		let mut every_frame = SystemStage::parallel();
 		every_second.add_system(check_enemy_collision.run_in_state(GameState::Playing));
-		app.add_enter_system(GameState::Loading, load_player_sheet)
-			.add_enter_system(GameState::Playing, spawn_player)
-			.add_enter_system(GameState::Loading, load_health_sheet)
-			.add_enter_system(GameState::Playing, spawn_health)
-			.add_system_set(
+		every_frame.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
 					.with_system(move_player)
@@ -91,6 +88,26 @@ impl Plugin for PlayerPlugin {
 					.with_system(enter_door)
 					.with_system(swing_axe)
 					.into()
+					); //moving
+		app.add_enter_system(GameState::Loading, load_player_sheet)
+			.add_enter_system(GameState::Playing, spawn_player)
+			.add_enter_system(GameState::Loading, load_health_sheet)
+			.add_enter_system(GameState::Playing, spawn_health)
+			/*.add_system_set(
+				ConditionSet::new()
+					.run_in_state(GameState::Playing)
+					.with_system(move_player)
+					.with_system(animate_player)
+					.with_system(enter_door)
+					.with_system(swing_axe)
+					.into()
+			) */
+			.add_stage_before(
+				CoreStage::Update,
+				"FixedStepFrame",
+				FixedTimestepStage::new(Duration::from_micros(16667)) // ~1 frame at 60 fps
+					.with_stage(every_frame)
+				
 			)
 			.add_stage_before(
 				CoreStage::Update,
@@ -152,11 +169,11 @@ fn move_player(
 ){
 	for (mut player, mut transform) in player.iter_mut() {
 
-		if player.grounded && input.just_pressed(KeyCode::Space) { //starts jump timer
-			player.y_velocity += JUMP_TIME * PLAYER_SPEED * TILE_SIZE * time.delta_seconds();
+		if player.grounded && input.pressed(KeyCode::Space) { //changed to "pressed" instead of "just_pressed" because sometimes the jump wasn't working. Now you can hold space to jump when you hit the ground, but this seems acceptable.
+			player.y_velocity = JUMP_TIME * PLAYER_SPEED * TILE_SIZE * time.delta_seconds();
 		}
 
-		player.y_velocity += -24.0 * TILE_SIZE * time.delta_seconds();
+		player.y_velocity += -25.0 * TILE_SIZE * time.delta_seconds();
 
 		let deltay = player.y_velocity * time.delta_seconds();
 		
