@@ -89,6 +89,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(animate_player)
 					.with_system(enter_door)
 					.with_system(swing_axe)
+					.with_system(update_health)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -395,7 +396,7 @@ fn update_health(
 			if sprite.index < texture_atlas.textures.len() as usize{
 				let hs_len : f32 = 10.0;//texture_atlas.textures.len() as f32;
 				let c_health : f32 = (p_health.health/10.);// % (texture_atlas.textures.len() as f32); //(player_health.health/10.).round() as f32;
-				info!("{}", (hs_len - c_health).round() as usize);
+				//info!("{}", (hs_len - c_health).round() as usize); //checking if index is correct
 				
 				sprite.index = (sprite.index + (hs_len - c_health).round() as usize) % texture_atlas.textures.len() as usize; //Use health to determine the index of the health sprite to show
 			}
