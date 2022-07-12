@@ -13,6 +13,8 @@ use crate::{
 	JUMP_TIME,
 	FRAME_TIME,
 	INV_TIME,
+	GameTextures,
+	SPRITE_SCALE,
 	GameState,
 	loading::{
 		LoadingAssets,
@@ -104,6 +106,7 @@ impl Plugin for PlayerPlugin {
 			.add_enter_system(GameState::Playing, spawn_player)
 			.add_enter_system(GameState::Loading, load_health_sheet)
 			.add_enter_system(GameState::Playing, spawn_health)
+			//.add_system(player_fire_system)
 			/*.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
@@ -443,3 +446,25 @@ fn update_health(
 	//Use health to determine the index of the health sprite to show
 
 } 
+
+fn player_fire_system(
+	mut commands: Commands,
+	kb: Res<Input<KeyCode>>,
+	game_textures: Res<GameTextures>,
+	query: Query<&Transform, With<Player>>,
+){
+	if let Ok(player_tf) = query.get_single(){
+		if kb.just_pressed(KeyCode::F){
+			let (x,y) = (player_tf.translation.x, player_tf.translation.y);
+			commands.spawn_bundle(SpriteBundle{
+				texture: game_textures.player_bolt.clone(),
+				transform: Transform{
+					translation:Vec3::new(x,y,0.),
+					scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
+					..Default::default()
+				},
+				..Default::default()
+			});
+		}
+	}
+}

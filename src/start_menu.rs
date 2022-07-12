@@ -89,7 +89,7 @@ fn handle_start_button(
 		match interaction{
 			Interaction:: Clicked => {
 				image.0 = ui_assets.button_pressed.clone();
-				info!("Yeeyee");
+				info!("Start Menu");
 				commands.insert_resource(NextState(GameState::Playing));
 			}
 			Interaction::Hovered | Interaction:: None=>{
