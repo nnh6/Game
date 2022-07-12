@@ -74,8 +74,8 @@ pub struct Direction; // 0 = Left,  1 = Right?
 #[derive(Deref, DerefMut)]
 pub struct PlayerSheet(Handle<TextureAtlas>);
 
-#[derive(Component,Deref, DerefMut)]
-pub struct JumpTimer(Timer);
+
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
 struct FixedStep;
@@ -95,6 +95,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(animate_player)
 					.with_system(enter_door)
 					.with_system(swing_axe)
+					.with_system(update_health)
 					.with_system(check_enemy_collision)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
@@ -381,11 +382,12 @@ fn spawn_health(
 			},
 			transform: Transform::from_xyz(-(WIN_W/2.) + (TILE_SIZE * 1.8)  , (WIN_H/2.) - (TILE_SIZE * 0.3), 900.),
 			..default()
-		});
+		})
+		.insert(Health::new());
 
 }
 
-
+/* 
 fn update_health(
 	player: Query<(Entity, &Health, &Transform), With<Player>>, 
 	texture_atlases: Res<Assets<TextureAtlas>>,
@@ -406,10 +408,30 @@ fn update_health(
 			if sprite.index < texture_atlas.textures.len() as usize{
 				let hs_len : f32 = 10.0;//texture_atlas.textures.len() as f32;
 				let c_health : f32 = (p_health.health/10.);// % (texture_atlas.textures.len() as f32); //(player_health.health/10.).round() as f32;
-				info!("{}", (hs_len - c_health).round() as usize);
+				//info!("{}", (hs_len - c_health).round() as usize); //checking if index is correct
 				
 				sprite.index = (sprite.index + (hs_len - c_health).round() as usize) % texture_atlas.textures.len() as usize; //Use health to determine the index of the health sprite to show
 			}
 		}
 	}
-}
+}*/
+
+
+fn update_health(
+	//texture_atlases: Res<Assets<TextureAtlas>>,
+	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>)>,
+	mut player: Query<&Health, With<Player>>
+){//not completed
+	
+	let mut sprite = health.single_mut();
+	let player = player.single_mut();
+	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+	//let hs_len : usize = texture_atlas.textures.len() as usize;
+	sprite.index = if player.health != 100.0 {
+		((100.0-player.health)/10.0).round() as usize
+	}else{
+		0 as usize
+	}
+	//Use health to determine the index of the health sprite to show
+
+} 
