@@ -74,8 +74,8 @@ pub struct Direction; // 0 = Left,  1 = Right?
 #[derive(Deref, DerefMut)]
 pub struct PlayerSheet(Handle<TextureAtlas>);
 
-#[derive(Component,Deref, DerefMut)]
-pub struct JumpTimer(Timer);
+
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
 struct FixedStep;
@@ -381,11 +381,12 @@ fn spawn_health(
 			},
 			transform: Transform::from_xyz(-(WIN_W/2.) + (TILE_SIZE * 1.8)  , (WIN_H/2.) - (TILE_SIZE * 0.3), 900.),
 			..default()
-		});
+		})
+		.insert(Health::new());
 
 }
 
-
+/* 
 fn update_health(
 	player: Query<(Entity, &Health, &Transform), With<Player>>, 
 	texture_atlases: Res<Assets<TextureAtlas>>,
@@ -412,4 +413,24 @@ fn update_health(
 			}
 		}
 	}
-}
+}*/
+
+
+fn update_health(
+	//texture_atlases: Res<Assets<TextureAtlas>>,
+	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>)>,
+	mut player: Query<&Health, With<Player>>
+){//not completed
+	
+	let mut sprite = health.single_mut();
+	let player = player.single_mut();
+	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+	//let hs_len : usize = texture_atlas.textures.len() as usize;
+	sprite.index = if player.health != 100.0 {
+		((100.0-player.health)/10.0).round() as usize
+	}else{
+		0 as usize
+	}
+	//Use health to determine the index of the health sprite to show
+
+} 
