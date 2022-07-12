@@ -362,7 +362,7 @@ fn load_health_sheet(
 		LoadingAssetInfo::for_handle(hp_handle.clone_untyped(), &asset_server),
 	);
 
-	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::new(300., 35.), 2, 6);
+	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::new(300., 32.5), 2, 6);
 	let hp_atlas_handle = texture_atlases.add(hp_atlas);
 
 	commands.insert_resource(HealthAtlas(hp_atlas_handle));

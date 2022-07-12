@@ -106,7 +106,7 @@ fn animate_bomb( //not complete yet
 		timer.tick(time.delta());
 		if timer.just_finished() {
 			let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-			sprite.index = (sprite.index + 1);
+			sprite.index = sprite.index + 1;
 			if sprite.index >= texture_atlas.textures.len(){
 				commands.entity(entity).despawn();
 			}
