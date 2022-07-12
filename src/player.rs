@@ -70,8 +70,8 @@ impl From<Vec2> for Velocity {
 #[derive(Deref, DerefMut)]
 pub struct PlayerSheet(Handle<TextureAtlas>);
 
-#[derive(Component,Deref, DerefMut)]
-pub struct JumpTimer(Timer);
+
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
 struct FixedStep;
@@ -89,6 +89,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(animate_player)
 					.with_system(enter_door)
 					.with_system(swing_axe)
+					.with_system(update_health)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -161,7 +162,6 @@ fn spawn_player(
 		})
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		.insert(Velocity::new())
-		.insert(JumpTimer(Timer::from_seconds(JUMP_TIME, false)))
 		.insert(Health::new())
 		.insert(Player{
 			grounded: false,
@@ -370,11 +370,12 @@ fn spawn_health(
 			},
 			transform: Transform::from_xyz(-(WIN_W/2.) + (TILE_SIZE * 1.8)  , (WIN_H/2.) - (TILE_SIZE * 0.3), 900.),
 			..default()
-		});
+		})
+		.insert(Health::new());
 
 }
 
-
+/* 
 fn update_health(
 	player: Query<(Entity, &Health, &Transform), With<Player>>, 
 	texture_atlases: Res<Assets<TextureAtlas>>,
@@ -401,4 +402,24 @@ fn update_health(
 			}
 		}
 	}
-}
+}*/
+
+
+fn update_health(
+	//texture_atlases: Res<Assets<TextureAtlas>>,
+	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>)>,
+	mut player: Query<&Health, With<Player>>
+){//not completed
+	
+	let mut sprite = health.single_mut();
+	let player = player.single_mut();
+	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+	//let hs_len : usize = texture_atlas.textures.len() as usize;
+	sprite.index = if player.health != 100.0 {
+		((100.0-player.health)/10.0).round() as usize
+	}else{
+		0 as usize
+	}
+	//Use health to determine the index of the health sprite to show
+
+} 
