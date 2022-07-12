@@ -12,6 +12,7 @@ use crate::{
 	PLAYER_SPEED,
 	JUMP_TIME,
 	FRAME_TIME,
+	INV_TIME,
 	GameState,
 	loading::{
 		LoadingAssets,
@@ -35,6 +36,7 @@ pub struct Player{
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(Timer);
 
+#[derive(Component, Deref, DerefMut)]
 pub struct InvincibilityTimer(Timer);
 #[derive(Component)]
 pub struct Health{
@@ -66,6 +68,8 @@ impl From<Vec2> for Velocity {
 		Self {velocity}
 	}
 }
+#[derive(Component)]
+pub struct Direction; // 0 = Left,  1 = Right?
 
 #[derive(Deref, DerefMut)]
 pub struct PlayerSheet(Handle<TextureAtlas>);
@@ -81,7 +85,9 @@ impl Plugin for PlayerPlugin {
 	fn build (&self, app: &mut App) {
 		let mut every_second = SystemStage::parallel();
 		let mut every_frame = SystemStage::parallel();
-    every_second.add_system(check_enemy_collision.run_in_state(GameState::Playing));//.add_system(update_health.run_in_state(GameState::Playing));
+    //every_second.add_system(check_enemy_collision.run_in_state(GameState::Playing)); //.add_system(update_health.run_in_state(GameState::Playing));
+		//every_second.add_system(check_enemy_collision.run_in_state(GameState::Playing));
+
 		every_frame.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
@@ -90,6 +96,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(enter_door)
 					.with_system(swing_axe)
 					.with_system(update_health)
+					.with_system(check_enemy_collision)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -162,6 +169,7 @@ fn spawn_player(
 		})
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		.insert(Velocity::new())
+		.insert(InvincibilityTimer(Timer::from_seconds(INV_TIME, false)))
 		.insert(Health::new())
 		.insert(Player{
 			grounded: false,
@@ -274,31 +282,34 @@ fn enter_door(
 pub fn check_enemy_collision(
 	_enemy_sheet: Res<EnemySheet>,
 	enemy_query: Query<&Transform, (With<Enemy>, Without<Player>)>,
-	mut player_query: Query<(Entity, &Transform, &mut Health), (With<Player>, Without<Enemy>)>,
+	mut player_query: Query<(Entity, &Transform, &mut Health, &mut InvincibilityTimer,), (With<Player>, Without<Enemy>)>,
 	//mut health: Query<(&mut TextureAtlasSprite,&Handle<TextureAtlas>,),With<Health>>,
 	//texture_atlases: Res<Assets<TextureAtlas>>,
 	mut commands: Commands,
 ) {
-	let (player_entity, player_transform, mut player_health) = player_query.single_mut();
+	let (player_entity, player_transform, mut player_health, mut inv_timer) = player_query.single_mut();
 	//let (mut sprite, texture_atlas_handle) = health.single_mut();
 
 	for enemy_transform in enemy_query.iter() {
 		if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() {
-			player_health.health = player_health.health - 20.;
-			//call update health here for more efficiency 
+      if inv_timer.finished(){
+			  player_health.health = player_health.health - 20.;
+			  //call update health here for more efficiency 
 			
-			//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-			//let hs_len : usize = texture_atlas.textures.len() as usize;
-			//let c_health : usize = (player_health.health/10.).round() as usize;
-			//sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
+  			//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+  			//let hs_len : usize = texture_atlas.textures.len() as usize;
+  			//let c_health : usize = (player_health.health/10.).round() as usize;
+  			//sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
 
-			info!("{}", player_health.health);
-			if player_health.health <= 0. {
-				//player dies
-				commands.insert_resource(NextState(GameState::GameOver));
-				commands.entity(player_entity).despawn();
+  			info!("{}", player_health.health);
+  			if player_health.health <= 0. {
+  				//player dies
+  				commands.insert_resource(NextState(GameState::GameOver));
+  				commands.entity(player_entity).despawn();
+        }
 			}
 		}
+		inv_timer.tick(Duration::from_secs_f32(FRAME_TIME));
 	}
 }
 
@@ -396,7 +407,7 @@ fn update_health(
 			if sprite.index < texture_atlas.textures.len() as usize{
 				let hs_len : f32 = 10.0;//texture_atlas.textures.len() as f32;
 				let c_health : f32 = (p_health.health/10.);// % (texture_atlas.textures.len() as f32); //(player_health.health/10.).round() as f32;
-				info!("{}", (hs_len - c_health).round() as usize);
+				//info!("{}", (hs_len - c_health).round() as usize); //checking if index is correct
 				
 				sprite.index = (sprite.index + (hs_len - c_health).round() as usize) % texture_atlas.textures.len() as usize; //Use health to determine the index of the health sprite to show
 			}

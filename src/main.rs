@@ -27,6 +27,7 @@ const WIN_H: f32 = 720.;
 const PLAYER_SPEED: f32 = 6.;
 const ANIM_TIME: f32 = 0.2;
 const JUMP_TIME: f32 = 120.;
+const INV_TIME: f32 = 1.;
 const FRAME_TIME: f32 = 0.016667;
 const TILE_SIZE: f32 = 80.;
 const PROGRESS_LENGTH: f32 = 120.;
