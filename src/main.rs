@@ -111,11 +111,11 @@ fn setup_camera(mut commands: Commands) {
 	commands.spawn_bundle(camera);
 }
 
-fn setup_textures(mut commands: Commands,
+fn setup_textures(_commands: Commands,
 				  asset_server: Res<AssetServer>,
 				)
 {
-	let game_textures = GameTextures{
+	let _game_textures = GameTextures{
 		player_bolt: asset_server.load(PLAYER_BOLT_SPRITE),
 	};			
 }
