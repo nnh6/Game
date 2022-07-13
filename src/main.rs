@@ -39,11 +39,11 @@ const SPRITE_SCALE: f32 = 0.5;
 
 #[derive(Component)]
 struct Slide;
-
 struct PopupTimer {
 	timer: Timer,
 	z: f32,
-	names: [&'static str; 8]
+	names: [&'static str; 8],
+	timer_start: bool,
 }
 
 struct GameTextures{
@@ -75,7 +75,8 @@ fn main() {
 			z: 0.,
 			names: ["best_monkey.png", "justinCredits.png", "NaraEndCredit.png",
 			"yinuo-credit r.png", "lrm88-credit-slide_LI.png",
-			 "landin-credits.png", "Grant-Credit.png", "trezza-credit.png"]
+			"landin-credits.png", "Grant-Credit.png", "trezza-credit.png"],
+			timer_start: true
 		})
 		.add_plugins(DefaultPlugins)
 		// Set initial state
@@ -132,10 +133,10 @@ fn display_slides(
 	mut p_timer: ResMut<PopupTimer>,
 ) {
 	p_timer.timer.tick(time.delta());
-	if p_timer.timer.just_finished() && p_timer.z < 8. {
+	if (p_timer.timer.just_finished() || p_timer.timer_start == true) && p_timer.z < 8. {
 		let name = p_timer.names[p_timer.z as usize];
 		p_timer.z += 1.;
-		
+		p_timer.timer_start = false;
 		commands
 		.spawn_bundle(SpriteBundle {
 			texture: asset_server.load(name),
