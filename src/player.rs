@@ -335,7 +335,7 @@ pub fn swing_axe(
 	for player_transform in player_query.iter() {
 		for (enemy_entity, enemy_transform, mut enemy_health) in enemy_query.iter_mut() {
 			let collision = collide(player_transform.translation, Vec2::splat(150.), enemy_transform.translation, Vec2::splat(50.));
-			if input.just_pressed(KeyCode::E){//} && collision.is_some() {
+			if input.just_pressed(KeyCode::E) && collision.is_some() {
 				match collision.unwrap() {
 					Collision::Left => {
 						enemy_health.health -= 20.;
