@@ -162,13 +162,13 @@ fn load_player_sheet(
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	mut loading_assets: ResMut<LoadingAssets>,
 ) {
-	let player_handle = asset_server.load("minerwalk_320 (1).png");
+	let player_handle = asset_server.load("minerwalk-and-swing.png");
 	loading_assets.insert(
 		player_handle.clone_untyped(),
 		LoadingAssetInfo::for_handle(player_handle.clone_untyped(), &asset_server),
 	);
 
-	let player_atlas = TextureAtlas::from_grid(player_handle, Vec2::splat(TILE_SIZE), 4, 2);
+	let player_atlas = TextureAtlas::from_grid(player_handle, Vec2::splat(TILE_SIZE), 4, 3);
 	let player_atlas_handle = texture_atlases.add(player_atlas);
 	
 	commands.insert_resource(PlayerSheet(player_atlas_handle));
@@ -262,6 +262,7 @@ fn check_tile_collision(
 fn animate_player(
 	time: Res<Time>,
 	texture_atlases: Res<Assets<TextureAtlas>>,
+	input: Res<Input<KeyCode>>,
 	mut player: Query<
 		(
 			&mut Player,
@@ -276,17 +277,23 @@ fn animate_player(
 	>,
 ){
 	for (player, mut sprite, texture_atlas_handle, mut timer, invTimer,health,mut transform) in player.iter_mut() {
+		if input.just_pressed(KeyCode::E){
+				let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+				sprite.index = (sprite.index + 1) % (texture_atlas.textures.len()/3)+ (texture_atlas.textures.len()/3)+ (texture_atlas.textures.len()/3);
+			}
 		let velocity = Vec2::new(player.x_velocity, player.y_velocity);
 		if velocity.cmpne(Vec2::ZERO).any() {
 			timer.tick(time.delta());
 			if !invTimer.finished() && timer.just_finished() && health.health != 100.0{
 				let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-				sprite.index = ((sprite.index + 1) % (texture_atlas.textures.len()/2)) + (texture_atlas.textures.len()/2);
+				sprite.index = ((sprite.index + 1) % (texture_atlas.textures.len()/3)) + (texture_atlas.textures.len()/3);
 			}
 			else if timer.just_finished() {
 				let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-				sprite.index = (sprite.index + 1) % (texture_atlas.textures.len()/2);
+				sprite.index = (sprite.index + 1) % (texture_atlas.textures.len()/3);
 			}
+
+			
 
 			if  player.x_velocity < 0.0 {
 				transform.rotation = Quat::from_rotation_y(std::f32::consts::PI);
