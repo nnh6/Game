@@ -33,6 +33,7 @@ pub struct Player{
 	y_velocity: f32,
 	x_velocity: f32,
 	grounded: bool,
+	bombs: f32,
 }
 
 //BOMB
@@ -123,7 +124,7 @@ impl Plugin for PlayerPlugin {
 			.add_enter_system(GameState::Playing, spawn_health)
 			//BOMB
 			.add_enter_system(GameState::Loading, load_bomb_sheet)
-			//.add_enter_system(GameState::Playing, spawn_bomb)
+			.add_enter_system(GameState::Playing, spawn_bomb)
 			//.add_system(player_fire_system)
 			/*.add_system_set(
 				ConditionSet::new()
@@ -196,6 +197,7 @@ fn spawn_player(
 			grounded: false,
 			y_velocity: -1.0,
 			x_velocity: 0.,
+			bombs: 3., //starting with 3 bombs for testing
 		});
 }
 
@@ -485,6 +487,8 @@ fn update_health(
 
 } 
 
+/*
+
 fn player_fire_system(
 	mut commands: Commands,
 	kb: Res<Input<KeyCode>>,
@@ -505,7 +509,7 @@ fn player_fire_system(
 			});
 		}
 	}
-}
+}*/
 
 fn bomb_throw(
 	mut commands: Commands,
@@ -513,12 +517,14 @@ fn bomb_throw(
 	//game_textures: Res<GameTextures>,
 	query: Query<&Transform, With<Player>>,
 	bomb_sheet: Res<BombSheet>,
+	mut player: Query<&mut Player, With<Player>>,
 ){
 	if let Ok(player_tf) = query.get_single(){
 		if kb.just_pressed(KeyCode::F){
 			let (x,y) = (player_tf.translation.x, player_tf.translation.y);
+			let mut player = player.single_mut();
 			//info!("Bomb dropped");
-			
+	if player.bombs > 0. {
 	commands
 		.spawn_bundle(SpriteSheetBundle {
 			texture_atlas: bomb_sheet.clone(),
@@ -537,6 +543,9 @@ fn bomb_throw(
 			y_velocity: 0., //-1.0,
 			x_velocity: 0.,
 		});
+		player.bombs = player.bombs - 1.;
+		info!("bombs left: {}", player.bombs);
+	}
 		}
 	}
 }
@@ -575,7 +584,7 @@ fn spawn_bomb(
 			transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
 			..default()
 		})
-		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+		//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		//.insert(Velocity::new())
 		.insert(Bomb{
 			//grounded: false,
@@ -619,4 +628,6 @@ fn animate_bomb( //not complete yet
 		
 		}
 	}
-}
+} 
+
+//bomb collision if touch a neutral bomb, collect it
