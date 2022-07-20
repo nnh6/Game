@@ -144,13 +144,13 @@ fn load_player_sheet(
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	mut loading_assets: ResMut<LoadingAssets>,
 ) {
-	let player_handle = asset_server.load("minerwalk_320.png");
+	let player_handle = asset_server.load("minerwalk_320 (1).png");
 	loading_assets.insert(
 		player_handle.clone_untyped(),
 		LoadingAssetInfo::for_handle(player_handle.clone_untyped(), &asset_server),
 	);
 
-	let player_atlas = TextureAtlas::from_grid(player_handle, Vec2::splat(TILE_SIZE), 4, 1);
+	let player_atlas = TextureAtlas::from_grid(player_handle, Vec2::splat(TILE_SIZE), 4, 2);
 	let player_atlas_handle = texture_atlases.add(player_atlas);
 	
 	commands.insert_resource(PlayerSheet(player_atlas_handle));
@@ -250,19 +250,32 @@ fn animate_player(
 			&mut TextureAtlasSprite,
 			&Handle<TextureAtlas>,
 			&mut AnimationTimer,
+			&InvincibilityTimer,
+			&Health,
+			&mut Transform
 		),
 		With<Player>
 	>,
 ){
-	for (player, mut sprite, texture_atlas_handle, mut timer) in player.iter_mut() {
+	for (player, mut sprite, texture_atlas_handle, mut timer, invTimer,health,mut transform) in player.iter_mut() {
 		let velocity = Vec2::new(player.x_velocity, player.y_velocity);
 		if velocity.cmpne(Vec2::ZERO).any() {
 			timer.tick(time.delta());
-
-			if timer.just_finished() {
+			if !invTimer.finished() && timer.just_finished() && health.health != 100.0{
 				let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-				sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
+				sprite.index = ((sprite.index + 1) % (texture_atlas.textures.len()/2)) + (texture_atlas.textures.len()/2);
 			}
+			else if timer.just_finished() {
+				let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+				sprite.index = (sprite.index + 1) % (texture_atlas.textures.len()/2);
+			}
+
+			if  player.x_velocity < 0.0 {
+				transform.rotation = Quat::from_rotation_y(std::f32::consts::PI);
+			} else {
+				transform.rotation = Quat::default();
+			}
+
 		}
 	}
 }
