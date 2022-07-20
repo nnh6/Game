@@ -41,12 +41,12 @@ impl Plugin for BombPlugin {
 		every_frame.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
-					.with_system(animate_bomb)
+					//.with_system(animate_bomb)
 					.into()
 					);
 
 		app.add_enter_system(GameState::Loading, load_bomb_sheet)
-		.add_enter_system(GameState::Playing, spawn_bomb)
+		//.add_enter_system(GameState::Playing, spawn_bomb)
 		.add_stage_before(
 			CoreStage::Update,
 			FixedStep,
