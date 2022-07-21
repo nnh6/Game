@@ -305,3 +305,28 @@ When reading in a room from file, it should have a seperate array of it's exits,
 This trait will be important for generation, so we can make sure that adjacent rooms' exits actually connect to each other.
 
 */
+
+fn generate_room(
+
+) {
+	let mut new_room = Room::new();
+	let t = 5;
+	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
+		for (j, col) in row.iter_mut().enumerate() {
+			if i == 0 || j == 0 {
+				//surround outside of room with walls
+				*col = '#';
+			}
+
+			//get n random seed values m[]
+			//place wall at cell n 
+			//this introduces variation into levels
+
+			//cellular automaton:
+			//get neighborhood of cell
+			//count types of neighbors
+			//if neighbors that are walls > t, this cell is now a wall
+			//otherwise it is empty
+		}
+	}
+}
