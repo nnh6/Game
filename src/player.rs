@@ -33,7 +33,20 @@ pub struct Player{
 	y_velocity: f32,
 	x_velocity: f32,
 	grounded: bool,
+	bombs: f32,
 }
+
+//BOMB
+#[derive(Component)]
+pub struct Bomb{
+	y_velocity: f32,
+	x_velocity: f32,
+	//grounded: bool,
+}
+
+#[derive(Deref, DerefMut)]
+pub struct BombSheet(Handle<TextureAtlas>);
+//BOMB^
 
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(Timer);
@@ -99,6 +112,9 @@ impl Plugin for PlayerPlugin {
 					.with_system(swing_axe)
 					.with_system(update_health)
 					.with_system(check_enemy_collision)
+					//BOMB
+					.with_system(animate_bomb)
+					.with_system(bomb_throw)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -106,6 +122,9 @@ impl Plugin for PlayerPlugin {
 			.add_enter_system(GameState::Playing, spawn_player)
 			.add_enter_system(GameState::Loading, load_health_sheet)
 			.add_enter_system(GameState::Playing, spawn_health)
+			//BOMB
+			.add_enter_system(GameState::Loading, load_bomb_sheet)
+			.add_enter_system(GameState::Playing, spawn_bomb)
 			//.add_system(player_fire_system)
 			/*.add_system_set(
 				ConditionSet::new()
@@ -144,13 +163,13 @@ fn load_player_sheet(
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	mut loading_assets: ResMut<LoadingAssets>,
 ) {
-	let player_handle = asset_server.load("minerwalk_320.png");
+	let player_handle = asset_server.load("minerwalk-and-swing.png");
 	loading_assets.insert(
 		player_handle.clone_untyped(),
 		LoadingAssetInfo::for_handle(player_handle.clone_untyped(), &asset_server),
 	);
 
-	let player_atlas = TextureAtlas::from_grid(player_handle, Vec2::splat(TILE_SIZE), 4, 1);
+	let player_atlas = TextureAtlas::from_grid(player_handle, Vec2::splat(TILE_SIZE), 4, 3);
 	let player_atlas_handle = texture_atlases.add(player_atlas);
 	
 	commands.insert_resource(PlayerSheet(player_atlas_handle));
@@ -178,6 +197,7 @@ fn spawn_player(
 			grounded: false,
 			y_velocity: -1.0,
 			x_velocity: 0.,
+			bombs: 3., //starting with 3 bombs for testing
 		});
 }
 
@@ -244,25 +264,45 @@ fn check_tile_collision(
 fn animate_player(
 	time: Res<Time>,
 	texture_atlases: Res<Assets<TextureAtlas>>,
+	input: Res<Input<KeyCode>>,
 	mut player: Query<
 		(
 			&mut Player,
 			&mut TextureAtlasSprite,
 			&Handle<TextureAtlas>,
 			&mut AnimationTimer,
+			&InvincibilityTimer,
+			&Health,
+			&mut Transform
 		),
 		With<Player>
 	>,
 ){
-	for (player, mut sprite, texture_atlas_handle, mut timer) in player.iter_mut() {
+	for (player, mut sprite, texture_atlas_handle, mut timer, invTimer,health,mut transform) in player.iter_mut() {
+		if input.just_pressed(KeyCode::E){
+				let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+				sprite.index = (sprite.index + 1) % (texture_atlas.textures.len()/3)+ (texture_atlas.textures.len()/3)+ (texture_atlas.textures.len()/3);
+			}
 		let velocity = Vec2::new(player.x_velocity, player.y_velocity);
 		if velocity.cmpne(Vec2::ZERO).any() {
 			timer.tick(time.delta());
-
-			if timer.just_finished() {
+			if !invTimer.finished() && timer.just_finished() && health.health != 100.0{
 				let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-				sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
+				sprite.index = ((sprite.index + 1) % (texture_atlas.textures.len()/3)) + (texture_atlas.textures.len()/3);
 			}
+			else if timer.just_finished() {
+				let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+				sprite.index = (sprite.index + 1) % (texture_atlas.textures.len()/3);
+			}
+
+			
+
+			if  player.x_velocity < 0.0 {
+				transform.rotation = Quat::from_rotation_y(std::f32::consts::PI);
+			} else {
+				transform.rotation = Quat::default();
+			}
+
 		}
 	}
 }
@@ -450,6 +490,8 @@ fn update_health(
 
 } 
 
+/*
+
 fn player_fire_system(
 	mut commands: Commands,
 	kb: Res<Input<KeyCode>>,
@@ -470,4 +512,125 @@ fn player_fire_system(
 			});
 		}
 	}
+}*/
+
+fn bomb_throw(
+	mut commands: Commands,
+	kb: Res<Input<KeyCode>>,
+	//game_textures: Res<GameTextures>,
+	query: Query<&Transform, With<Player>>,
+	bomb_sheet: Res<BombSheet>,
+	mut player: Query<&mut Player, With<Player>>,
+){
+	if let Ok(player_tf) = query.get_single(){
+		if kb.just_pressed(KeyCode::F){
+			let (x,y) = (player_tf.translation.x, player_tf.translation.y);
+			let mut player = player.single_mut();
+			//info!("Bomb dropped");
+	if player.bombs > 0. {
+	commands
+		.spawn_bundle(SpriteSheetBundle {
+			texture_atlas: bomb_sheet.clone(),
+			sprite: TextureAtlasSprite {
+				index: 0,
+				..default()
+			},
+			transform: Transform::from_xyz(x, (y- (TILE_SIZE * 0.25)), 900.), 
+			//for throw, change the velocities for projectile/parabola trajectory and have spawn from player y (center of player sprite)
+			..default()
+		})
+		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+		//.insert(Velocity::new())
+		.insert(Bomb{
+			//grounded: false,
+			y_velocity: 0., //-1.0,
+			x_velocity: 0.,
+		});
+		player.bombs = player.bombs - 1.;
+		info!("bombs left: {}", player.bombs);
+	}
+		}
+	}
 }
+
+//BOMB/////////////////
+fn load_bomb_sheet(
+	mut commands: Commands,
+	asset_server: Res<AssetServer>,
+	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+	mut loading_assets: ResMut<LoadingAssets>,
+) {
+	let bomb_handle = asset_server.load("bomb_boom.png");
+	loading_assets.insert(
+		bomb_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(bomb_handle.clone_untyped(), &asset_server),
+	);
+
+	let bomb_atlas = TextureAtlas::from_grid(bomb_handle, Vec2::splat(35.), 6, 1);
+	let bomb_atlas_handle = texture_atlases.add(bomb_atlas);
+	
+	commands.insert_resource(BombSheet(bomb_atlas_handle));
+}
+
+fn spawn_bomb(
+	mut commands: Commands,
+	bomb_sheet: Res<BombSheet>,
+){
+	commands
+		.spawn_bundle(SpriteSheetBundle {
+			texture_atlas: bomb_sheet.clone(),
+			sprite: TextureAtlasSprite {
+				index: 0,
+				..default()
+			},
+			//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
+			transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
+			..default()
+		})
+		//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+		//.insert(Velocity::new())
+		.insert(Bomb{
+			//grounded: false,
+			y_velocity: 0., //-1.0,
+			x_velocity: 0.,
+		});
+
+}
+
+fn animate_bomb( //not complete yet
+	time: Res<Time>,
+	texture_atlases: Res<Assets<TextureAtlas>>,
+	mut bomb: Query<
+		(
+			Entity,
+			&mut Bomb,
+			&mut TextureAtlasSprite,
+			&Handle<TextureAtlas>,
+			&mut AnimationTimer,
+			
+		),
+		With<Bomb>
+	>,
+	mut commands: Commands,
+){
+	//info!("tick");
+	//let (entity, mut bomb, mut sprite, texture_atlas_handle, mut timer) = bomb.single_mut();
+	for (entity, bomb, mut sprite, texture_atlas_handle, mut timer) in bomb.iter_mut() {
+		
+		//let ground = bomb.grounded;
+		//info!("bomb");
+		timer.tick(time.delta());
+
+		if timer.just_finished() {
+			let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+			sprite.index = (sprite.index + 1);// % texture_atlas.textures.len();
+
+			if sprite.index >= texture_atlas.textures.len(){
+				commands.entity(entity).despawn();
+			}
+		
+		}
+	}
+} 
+
+//bomb collision if touch a neutral bomb, collect it
