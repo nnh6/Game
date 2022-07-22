@@ -102,7 +102,7 @@ fn enemy_movement_system(collision: Query<&Transform, (With<Collider>, Without<E
 			translation.x += dx * distance_ratio;
 		}
 		//translation.x += BASE_SPEED * TIME_STEP/4.;
-		 println!("current x = {}", x);
+		// println!("current x = {}", x);
 		// println!("current dist_ratio = {}", distance_ratio);
 
 		let target = transform.translation + Vec3::new(dx, 0., 0.);
