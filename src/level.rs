@@ -26,7 +26,8 @@ use crate::{
 };
 
 const T: u32 = 5;	//CA threshold value
-const N: usize = 2;	//number of seed walls
+const N: usize = 20;	//number of seed walls
+const P: u32 = 3;  //iterations of the CA to run
 
 #[derive(Component)]
 pub struct Collider;
@@ -358,12 +359,32 @@ fn generate_room() -> Room {
 			//otherwise it is empty
 		}
 	}
+	
+	for p in 0..P {
+		for i in 1..ROOM_HEIGHT-1 {
+			for j in 1..ROOM_WIDTH-1 {
+				let mut neighboring_walls = 0;
+				if new_room.room_coords[i-1][j-1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i-1][j] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i-1][j+1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i][j-1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i][j+1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i+1][j-1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i+1][j] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i+1][j+1] == '#' {neighboring_walls += 1;}
+	
+				if neighboring_walls >= T {
+					new_room.room_coords[i][j] = '#';
+				}
+			}
+		}
+	}
 	return new_room;
 }
 
 fn gen_seed_wall_locations() -> [u32;N] {
-	let arr = [41;
+	let arr = [42,25,56,128,56,108,32,70,139,65,105,70,84,121,129,82,63,70,125,113];
 	//Rng::gen_range(0..ROOM_HEIGHT*ROOM_WIDTH);
-	 N];
+	 
 	return arr;
 }
