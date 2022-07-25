@@ -1,10 +1,12 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader},
+	fmt,
 }; //might have to ask to use these
+
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-
+//use rand::Rng;
 use crate::{
 	//LEVEL_LEN,
 	WIN_W,
@@ -23,6 +25,10 @@ use crate::{
 	enemy::*,
 };
 
+const T: u32 = 5;	//CA threshold value
+const N: usize = 20;	//number of seed walls
+const P: u32 = 3;  //iterations of the CA to run
+
 #[derive(Component)]
 pub struct Collider;
 
@@ -36,17 +42,33 @@ pub struct Background;
 pub struct Door;
 
 
-#[derive(Component,Copy,Clone)]
+#[derive(Component,Copy,Clone,Debug)]
 pub struct Room
 {
+	seed_wall_locations: [u32;N],
 	room_coords:[[char;ROOM_WIDTH]; ROOM_HEIGHT] //array of tiles in the room
 }
+
 impl Room
 {
 	pub fn new() -> Self {
-		Self{room_coords: [['-'; ROOM_WIDTH]; ROOM_HEIGHT] }
+		Self{
+			seed_wall_locations: gen_seed_wall_locations(),
+			room_coords: [['-'; ROOM_WIDTH]; ROOM_HEIGHT] }
 	}
 }
+
+impl fmt::Display for Room {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let coords = &self.room_coords;
+
+		for row in coords {
+			write!(f, "\n{:?}", row)?;
+		}
+		write!(f, "")
+	}
+}
+
 #[derive(Component,Copy,Clone)]
 pub struct Map
 {
@@ -54,6 +76,7 @@ pub struct Map
 	x_coords: usize,
 	y_coords: usize, //coordinates for location of the current room
 }
+
 impl Map
 {
 	pub fn new() -> Self {
@@ -106,6 +129,7 @@ fn load_level(
 		LoadingAssetInfo::for_handle(door_handle.clone_untyped(), &asset_server),
 	);
 	commands.insert_resource(DoorImage(door_handle));
+	info!("{}", generate_room());
 
 }
 
@@ -259,3 +283,62 @@ When reading in a room from file, it should have a seperate array of it's exits,
 This trait will be important for generation, so we can make sure that adjacent rooms' exits actually connect to each other.
 
 */
+
+fn generate_room() -> Room {
+	let mut new_room = Room::new();
+	let mut cell_count = 0;
+
+	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
+		for (j, character) in row.iter_mut().enumerate() {
+			if i == 0 || j == 0 || i == ROOM_HEIGHT - 1 || j == ROOM_WIDTH - 1 {
+				//surround outside of room with walls
+				*character = '#';
+			}
+
+			//place seed walls
+			cell_count += 1;
+			for location in new_room.seed_wall_locations {
+				if cell_count == location {
+					*character = '#';
+				}
+			}
+
+			//cellular automaton:
+			//get neighborhood of cell
+			//let neighbors = [];
+
+
+			//count types of neighbors
+			//if neighbors that are walls > t, this cell is now a wall
+			//otherwise it is empty
+		}
+	}
+	
+	for p in 0..P {
+		for i in 1..ROOM_HEIGHT-1 {
+			for j in 1..ROOM_WIDTH-1 {
+				let mut neighboring_walls = 0;
+				if new_room.room_coords[i-1][j-1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i-1][j] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i-1][j+1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i][j-1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i][j+1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i+1][j-1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i+1][j] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i+1][j+1] == '#' {neighboring_walls += 1;}
+	
+				if neighboring_walls >= T {
+					new_room.room_coords[i][j] = '#';
+				}
+			}
+		}
+	}
+	return new_room;
+}
+
+fn gen_seed_wall_locations() -> [u32;N] {
+	let arr = [42,25,56,128,56,108,32,70,139,65,105,70,84,121,129,82,63,70,125,113];
+	//Rng::gen_range(0..ROOM_HEIGHT*ROOM_WIDTH);
+	 
+	return arr;
+}
