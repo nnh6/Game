@@ -35,26 +35,29 @@ pub struct Background;
 #[derive(Component)]
 pub struct Door;
 
+
 #[derive(Component,Copy,Clone)]
 pub struct Room
 {
-	room_coords:[[char;ROOM_HEIGHT]; ROOM_WIDTH] 
+	room_coords:[[char;ROOM_WIDTH]; ROOM_HEIGHT] //array of tiles in the room
 }
 impl Room
 {
 	pub fn new() -> Self {
-		Self{room_coords: [['-'; ROOM_HEIGHT]; ROOM_WIDTH] }
+		Self{room_coords: [['-'; ROOM_WIDTH]; ROOM_HEIGHT] }
 	}
 }
 #[derive(Component,Copy,Clone)]
 pub struct Map
 {
-	map_coords:[[Room;MAP_HEIGHT]; MAP_WIDTH]
+	map_coords:[[Room;MAP_WIDTH]; MAP_HEIGHT], //array of rooms on the map
+	x_coords: usize,
+	y_coords: usize, //coordinates for location of the current room
 }
 impl Map
 {
 	pub fn new() -> Self {
-		Self{map_coords: [[Room::new(); MAP_HEIGHT]; MAP_WIDTH] }
+		Self{map_coords: [[Room::new(); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
 	}
 }
 
@@ -67,6 +70,7 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
 	fn build (&self, app: &mut App) {
 		app.add_enter_system(GameState::Loading, load_level)
+			.add_enter_system(GameState::Loading, read_map)
 			.add_enter_system(GameState::Playing, setup_level);
 	}
 }
@@ -107,6 +111,7 @@ fn load_level(
 
 fn setup_level(
 	mut commands: Commands,
+	mut map_query: Query<(&mut Map)>,
 	texture_atlases: Res<Assets<TextureAtlas>>,	
 	background_image: Res<BackgroundImage>,
 	door_image: Res<DoorImage>,
@@ -125,175 +130,124 @@ fn setup_level(
 		.insert(Background); //spawns background
 
 
-	let file = File::open("assets/map.txt").expect("No map file found");
+	//let file = File::open("assets/map.txt").expect("No map file found");
 	let brick_atlas = texture_atlases.get(&brick_sheet.0);
 	let brick_len = brick_atlas.unwrap().len();
+	let map = map_query.single_mut();
+	let current_room = map.map_coords[map.x_coords][map.y_coords];
 	let mut i = 0;
 	let t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
-	for(y, line) in BufReader::new(file).lines().enumerate() { //read each line from file
-		if let Ok(line) = line {
-			for (x, char) in line.chars().enumerate() { //read each char from line
-				match char { 
-					'#'=> {
-						commands
-							.spawn_bundle(SpriteSheetBundle {
-								texture_atlas: brick_sheet.0.clone(),
-								sprite: TextureAtlasSprite {
-									index: i % brick_len,
-									..default()
-								},
-								transform: Transform {
-									translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
-									..default()
-								},
+	for(y, line) in current_room.room_coords.iter().enumerate() { //read each line from map
+		for (x, char) in line.iter().enumerate() { //read each char from line
+			match char { 
+				'#'=> {
+					commands
+						.spawn_bundle(SpriteSheetBundle {
+							texture_atlas: brick_sheet.0.clone(),
+							sprite: TextureAtlasSprite {
+								index: i % brick_len,
 								..default()
-							})
-							.insert(Brick)
-							.insert(Collider);
-
-						i += 1;
-					},
-					'D'=> {
-						commands
-							.spawn_bundle(SpriteBundle {
-								texture: door_image.0.clone(),
-								transform: Transform {
-									translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
-									..default()
-								},
+							},
+							transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
 								..default()
-							})
-							.insert(Door);
-
+							},
+							..default()
+						})
+						.insert(Brick)
+						.insert(Collider);
 						i += 1;
-					}
-					'E'=> {
-						commands
-							.spawn_bundle(SpriteSheetBundle {
-								texture_atlas: enemy_sheet.clone(),
-								sprite: TextureAtlasSprite {
-									index: 0,
-									..default()
-								},
-								transform: Transform {
-									translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
-									..default()
-								},
+				},
+				'D'=> {
+					commands
+						.spawn_bundle(SpriteBundle {
+							texture: door_image.0.clone(),
+							transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
 								..default()
-							})
-							.insert(Health::new())
-							.insert(Enemy);
+							},
+							..default()
+						})
+						.insert(Door);
 						i += 1;
-					}
-					_=> {
-						//default case
-					}
+				}
+				'E'=> {
+					commands
+						.spawn_bundle(SpriteSheetBundle {
+							texture_atlas: enemy_sheet.clone(),
+							sprite: TextureAtlasSprite {
+								index: 0,
+								..default()
+							},
+							transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
+								..default()
+							},
+							..default()
+						})
+						.insert(Health::new())
+						.insert(Enemy);
+					i += 1;
+				}
+				_=> {
+					
+					//default case
 				}
 			}
 		}
     }
 }
 
-/*fn read_map(
+fn read_map(
 	mut commands: Commands,
 	
-	texture_atlases: Res<Assets<TextureAtlas>>,	
-	background_image: Res<BackgroundImage>,
-	door_image: Res<DoorImage>,
-	brick_sheet: Res<BrickSheet>,
-	enemy_sheet: Res<EnemySheet>,
+	//texture_atlases: Res<Assets<TextureAtlas>>,	
+	//background_image: Res<BackgroundImage>,
+	//door_image: Res<DoorImage>,
+	//brick_sheet: Res<BrickSheet>,
+	//enemy_sheet: Res<EnemySheet>,
 ) {
-	commands
-		.spawn_bundle(SpriteBundle {
-			texture: background_image.0.clone(),
-			transform: Transform {
-				translation: Vec3::new(0., 0. , 100.0), 
-				..default()
-			},
-			..default()
-		})
-		.insert(Background); //spawns background
-
-
 	let file = File::open("assets/map.txt").expect("No map file found");
-	let brick_atlas = texture_atlases.get(&brick_sheet.0);
-	let brick_len = brick_atlas.unwrap().len();
-	let mut i = 0;
-	let mut z1, z2 = 0; //Current Map location is [z1],[z2]
+	//let brick_atlas = texture_atlases.get(&brick_sheet.0);
+	//let brick_len = brick_atlas.unwrap().len();
+	let mut map = Map::new();
+	let mut z1 = 0;
+	let mut z2 = 0; //Current Map location is [z1],[z2]
+	let mut current_room = map.map_coords[z1][z2];
 	let t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
-	for(y, line) in BufReader::new(file).lines().enumerate() { //read each line from file
+	for(x, line) in BufReader::new(file).lines().enumerate() { //read each line from file
 		if let Ok(line) = line {
-			for (x, char) in line.chars().enumerate() { //read each char from line
+			for (y, char) in line.chars().enumerate() { //read each char from line
 				match char { 
-					'#'=> {
-						commands
-							.spawn_bundle(SpriteSheetBundle {
-								texture_atlas: brick_sheet.0.clone(),
-								sprite: TextureAtlasSprite {
-									index: i % brick_len,
-									..default()
-								},
-								transform: Transform {
-									translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
-									..default()
-								},
-								..default()
-							})
-							.insert(Brick)
-							.insert(Collider);
-
-						i += 1;
-					},
-					'D'=> {
-						commands
-							.spawn_bundle(SpriteBundle {
-								texture: door_image.0.clone(),
-								transform: Transform {
-									translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
-									..default()
-								},
-								..default()
-							})
-							.insert(Door);
-
-						i += 1;
-					}
-					'E'=> {
-						commands
-							.spawn_bundle(SpriteSheetBundle {
-								texture_atlas: enemy_sheet.clone(),
-								sprite: TextureAtlasSprite {
-									index: 0,
-									..default()
-								},
-								transform: Transform {
-									translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
-									..default()
-								},
-								..default()
-							})
-							.insert(Health::new())
-							.insert(Enemy);
-						i += 1;
-					}
+					
 					'!'=> { //End of Room
-						if z2<MAP_WIDTH {
+						map.map_coords[z1][z2] = current_room;
+						if z2<MAP_WIDTH-1 { //counting starts at 0
 						z2+= 1;
 						}
-						else if z1<MAP_HEIGHT {
+						else if z1<MAP_HEIGHT-1 {
 							z2 = 0;
 							z1 +=1;
 						}
+						current_room = map.map_coords[z1][z2];
 					}
+					
+					//needs case for directional exit markers
+					
 					_=> {
+						info!("{}", char);
+						current_room.room_coords[x%9][y%16] = char;
 						//default case
 					}
 				}
 			}
 		}
     }
+	map.map_coords[z1][z2] = current_room; //need to add the last room since the loop never does
+	//might add a line here to set the current room to the middle of the map
+	commands.spawn().insert(map);
 } 
-*/
+
 /*
 Divide Map File into "Cells" (9:16 Rooms)
 Load file into 2D Array of Rooms
