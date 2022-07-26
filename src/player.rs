@@ -312,10 +312,13 @@ fn enter_door(
 	input: Res<Input<KeyCode>>,
 ) {
 	for player_transform in player.iter() {
-		let door_transform = door.single();
+		//let door_transform = door.single();
+		for door_transform in door.iter()
+		{
 		if input.just_pressed(KeyCode::W) && collide(player_transform.translation, Vec2::splat(50.), door_transform.translation, Vec2::splat(50.)).is_some() {
 			info!("door open!");
 			commands.insert_resource(NextState(GameState::Credits));
+		}
 		}
 	}
 }
