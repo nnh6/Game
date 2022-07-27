@@ -29,6 +29,12 @@ const T: u32 = 5;	//CA threshold value
 const N: usize = 20;	//number of seed walls
 const P: u32 = 3;  //iterations of the CA to run
 
+// room.exits indexes
+const LEFT: usize = 0;
+const RIGHT: usize = 1;
+const TOP: usize = 2;
+const BOTTOM: usize = 3;
+
 #[derive(Component)]
 pub struct Collider;
 
@@ -42,19 +48,23 @@ pub struct Background;
 pub struct Door;
 
 
+
 #[derive(Component,Copy,Clone,Debug)]
 pub struct Room
 {
 	seed_wall_locations: [u32;N],
-	room_coords:[[char;ROOM_WIDTH]; ROOM_HEIGHT] //array of tiles in the room
+	room_coords:[[char;ROOM_WIDTH]; ROOM_HEIGHT], //array of tiles in the room
+	exits: [bool;4],
 }
 
 impl Room
 {
-	pub fn new() -> Self {
-		Self{
+	pub fn new(exits: [bool;4]) -> Self {
+		Self {
 			seed_wall_locations: gen_seed_wall_locations(),
-			room_coords: [['-'; ROOM_WIDTH]; ROOM_HEIGHT] }
+			room_coords: [['-'; ROOM_WIDTH]; ROOM_HEIGHT],
+			exits: exits,
+		}
 	}
 }
 
@@ -80,7 +90,7 @@ pub struct Map
 impl Map
 {
 	pub fn new() -> Self {
-		Self{map_coords: [[Room::new(); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
+		Self{map_coords: [[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
 	}
 }
 
@@ -129,7 +139,7 @@ fn load_level(
 		LoadingAssetInfo::for_handle(door_handle.clone_untyped(), &asset_server),
 	);
 	commands.insert_resource(DoorImage(door_handle));
-	info!("{}", generate_room());
+	info!("{}", generate_room([true, false, false, false]));
 
 }
 
@@ -284,13 +294,13 @@ This trait will be important for generation, so we can make sure that adjacent r
 
 */
 
-fn generate_room() -> Room {
-	let mut new_room = Room::new();
+fn generate_room(exits: [bool;4]) -> Room {
+	let mut new_room = Room::new(exits);
 	let mut cell_count = 0;
 
 	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
 		for (j, character) in row.iter_mut().enumerate() {
-			if i == 0 || j == 0 || i == ROOM_HEIGHT - 1 || j == ROOM_WIDTH - 1 {
+			if (i == 0 && !exits[TOP])|| (j == 0 && !exits[LEFT]) || (i == ROOM_HEIGHT - 1 && !exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && !exits[RIGHT]){
 				//surround outside of room with walls
 				*character = '#';
 			}
@@ -302,18 +312,11 @@ fn generate_room() -> Room {
 					*character = '#';
 				}
 			}
-
-			//cellular automaton:
-			//get neighborhood of cell
-			//let neighbors = [];
-
-
-			//count types of neighbors
-			//if neighbors that are walls > t, this cell is now a wall
-			//otherwise it is empty
 		}
 	}
 	
+
+
 	for p in 0..P {
 		for i in 1..ROOM_HEIGHT-1 {
 			for j in 1..ROOM_WIDTH-1 {
