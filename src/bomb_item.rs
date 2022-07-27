@@ -23,11 +23,11 @@ use crate::{
 };
 
 #[derive(Component)]
-pub struct Bomb;/*{
+pub struct Bomb{
 	y_velocity: f32,
 	x_velocity: f32,
 	//grounded: bool,
-}*/
+}
 
 #[derive(Deref, DerefMut)]
 pub struct BombSheet(Handle<TextureAtlas>);
@@ -36,30 +36,33 @@ pub struct BombSheet(Handle<TextureAtlas>);
 //pub struct AnimationTimer(Timer);
 
 //#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
-//struct FixedStep;
+//struct FixedTimeStep;
 
 pub struct BombPlugin;
 impl Plugin for BombPlugin {
 	fn build (&self, app: &mut App) {
 		//let every_second = SystemStage::parallel();
-		let mut every_frame = SystemStage::parallel();
+		//let mut every_frame = SystemStage::parallel();
 
-		every_frame.add_system_set(
+		/*every_frame.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
-					//.with_system(animate_bomb)
 					.with_system(check_player_collision)
 					.into()
 					);
+		*/
 		
 
 		app.add_enter_system(GameState::Loading, load_bomb_sheet)//;
 		.add_enter_system(GameState::Playing, spawn_bomb);
-		//.add_stage_before(
-			//CoreStage::Update,
-			//FixedStep,
-			//FixedTimestepStage::from_stage(Duration::from_micros(16667), every_frame) // ~1 frame at 60 fps
-		//)
+		//.add_system(check_player_collision);
+		/*.add_stage_before(
+				CoreStage::Update,
+				FixedTimeStep,
+				FixedTimestepStage::from_stage(Duration::from_micros(16667), every_frame) // ~1 frame at 60 fps
+			
+			);*/
+		//;
 		//.add_stage_before(
 		//	CoreStage::Update,
 		//	FixedStep,
@@ -101,15 +104,15 @@ fn spawn_bomb(
 				index: 0,
 				..default()
 			},
-			transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
+			transform: Transform::from_xyz(-200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
 			..default()
 		})
 		//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		//.insert(Velocity::new())
 		.insert(Bomb{
 			//grounded: false,
-			//y_velocity: 0., //-1.0,
-			//x_velocity: 0.,
+			y_velocity: 0., //-1.0,
+			x_velocity: 0.,
 		});
 
 }
@@ -126,6 +129,8 @@ pub fn check_player_collision(
 		Without<Player>)
 		>,
 ) {
+	info!("bp check"); 
+
 	let (bomb_entity, bomb_transform)  = bomb_query.single_mut();
 	
 	for player_transform in player_query.iter() {
@@ -134,7 +139,7 @@ pub fn check_player_collision(
   				commands.entity(bomb_entity).despawn();
   			}
 	}
-	}
+}
 
 /*
 fn animate_bomb( //not complete yet
