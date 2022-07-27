@@ -553,7 +553,7 @@ fn bomb_throw(
 	}
 }
 
-//BOMB/////////////////
+//BOMB_WEAPON/////////////////
 fn load_bomb_sheet(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,

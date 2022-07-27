@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use std::time::Duration;
+use bevy::sprite::collide_aabb::collide;
+
 
 use crate::{
 	//for example bomb spawn
@@ -13,51 +15,57 @@ use crate::{
 		LoadingAssets,
 		LoadingAssetInfo,
 	},
-	FRAME_TIME,
+	FRAME_TIME, level::BombItem,
+	player::{
+		Player,
+		PlayerSheet
+	}
 };
 
 #[derive(Component)]
-pub struct Bomb{
+pub struct Bomb;/*{
 	y_velocity: f32,
 	x_velocity: f32,
 	//grounded: bool,
-}
+}*/
 
 #[derive(Deref, DerefMut)]
 pub struct BombSheet(Handle<TextureAtlas>);
 
-#[derive(Component, Deref, DerefMut)]
-pub struct AnimationTimer(Timer);
+//#[derive(Component, Deref, DerefMut)]
+//pub struct AnimationTimer(Timer);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
-struct FixedStep;
+//#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
+//struct FixedStep;
 
 pub struct BombPlugin;
 impl Plugin for BombPlugin {
 	fn build (&self, app: &mut App) {
-		let every_second = SystemStage::parallel();
+		//let every_second = SystemStage::parallel();
 		let mut every_frame = SystemStage::parallel();
 
 		every_frame.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
 					//.with_system(animate_bomb)
+					.with_system(check_player_collision)
 					.into()
 					);
+		
 
-		app.add_enter_system(GameState::Loading, load_bomb_sheet)
-		//.add_enter_system(GameState::Playing, spawn_bomb)
-		.add_stage_before(
-			CoreStage::Update,
-			FixedStep,
-			FixedTimestepStage::from_stage(Duration::from_micros(16667), every_frame) // ~1 frame at 60 fps
+		app.add_enter_system(GameState::Loading, load_bomb_sheet)//;
+		.add_enter_system(GameState::Playing, spawn_bomb);
+		//.add_stage_before(
+			//CoreStage::Update,
+			//FixedStep,
+			//FixedTimestepStage::from_stage(Duration::from_micros(16667), every_frame) // ~1 frame at 60 fps
 		//)
 		//.add_stage_before(
 		//	CoreStage::Update,
 		//	FixedStep,
 		//	FixedTimestepStage::new(Duration::from_secs(1))
 		//		.with_stage(every_second)
-		);
+		//);
 	}
 }
 
@@ -79,6 +87,9 @@ fn load_bomb_sheet(
 	commands.insert_resource(BombSheet(bomb_atlas_handle));
 }
 
+
+
+
 fn spawn_bomb(
 	mut commands: Commands,
 	bomb_sheet: Res<BombSheet>,
@@ -93,16 +104,39 @@ fn spawn_bomb(
 			transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
 			..default()
 		})
-		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+		//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		//.insert(Velocity::new())
 		.insert(Bomb{
 			//grounded: false,
-			y_velocity: 0., //-1.0,
-			x_velocity: 0.,
+			//y_velocity: 0., //-1.0,
+			//x_velocity: 0.,
 		});
 
 }
 
+pub fn check_player_collision(
+	mut commands: Commands,
+	player_query: Query<&Transform, (With<Player>, Without<BombItem>)>,
+	mut bomb_query: Query<
+		(
+			Entity, 
+			&Transform, 
+		),
+		(With<BombItem>,
+		Without<Player>)
+		>,
+) {
+	let (bomb_entity, bomb_transform)  = bomb_query.single_mut();
+	
+	for player_transform in player_query.iter() {
+		if collide(player_transform.translation, Vec2::splat(50.), bomb_transform.translation, Vec2::splat(50.)).is_some() {
+  				info!("bomb picked up");
+  				commands.entity(bomb_entity).despawn();
+  			}
+	}
+	}
+
+/*
 fn animate_bomb( //not complete yet
 	time: Res<Time>,
 	texture_atlases: Res<Assets<TextureAtlas>>,
@@ -137,4 +171,4 @@ fn animate_bomb( //not complete yet
 		
 		}
 	}
-}
+}*/
