@@ -42,3 +42,4 @@ features = [
 
 [dependencies]
 iyes_loopless = "0.5.1"
+rand = "0.8.4"

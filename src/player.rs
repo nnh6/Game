@@ -428,10 +428,10 @@ fn animate_swing( //not complete yet
 	//info!("tick");
 	//let (entity, mut bomb, mut sprite, texture_atlas_handle, mut timer) = bomb.single_mut();
 	for (mut player, mut sprite, texture_atlas_handle, mut timer, mut transform) in player.iter_mut() {
-		if input.just_pressed(KeyCode::E) || player.swing{
+		if player.x_velocity == 0.0 && (input.just_pressed(KeyCode::E) || player.swing){
 			
 			if !player.swing || sprite.index < 8{
-				info!("setting to 8");
+				//info!("setting to 8");
 				sprite.index = 8;
 			}
 			player.swing = true;
