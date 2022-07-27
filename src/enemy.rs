@@ -77,7 +77,7 @@ fn enemy_movement_system(time: Res<Time>, mut query: Query<&mut Transform, With<
 		let max_distance = TIME_STEP * BASE_SPEED;
 
 		//fixtures (hardcoded)
-		let dir: f32 = -1.; //1 counter clockwise, -1 clockwise
+		let dir: f32 = 1.; //1 counter clockwise, -1 clockwise
 		let (x_pivot, y_pivot) = (0., 0.);
 		let (x_radius, y_radius) = (200., 130.);
 
