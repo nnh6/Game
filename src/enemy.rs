@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use bevy::sprite::collide_aabb::collide;
 use bevy::sprite::collide_aabb::Collision;
+use std::f32::consts::PI;
 
 use crate::{
 	GameState,
@@ -36,13 +37,13 @@ fn load_enemy_sheet(
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	mut loading_assets: ResMut<LoadingAssets>,
 ) {
-	let enemy_handle = asset_server.load("groundhog.png");
+	let enemy_handle = asset_server.load("bat.png");
 	loading_assets.insert(
 		enemy_handle.clone_untyped(),
 		LoadingAssetInfo::for_handle(enemy_handle.clone_untyped(), &asset_server),
 	);
 
-	let enemy_atlas = TextureAtlas::from_grid(enemy_handle, Vec2::splat(65.), 20, 20);
+	let enemy_atlas = TextureAtlas::from_grid(enemy_handle, Vec2::splat(70.), 25, 25);
 	let enemy_atlas_handle = texture_atlases.add(enemy_atlas);
 	
 	commands.insert_resource(EnemySheet(enemy_atlas_handle));
@@ -66,25 +67,45 @@ fn check_tile_collision(
 	true
 }
 
-fn enemy_movement_system(collision: Query<&Transform, (With<Collider>, Without<Enemy>)>, time: Res<Time>, mut query: Query<&mut Transform, With<Enemy>>){
+fn enemy_movement_system(time: Res<Time>, mut query: Query<&mut Transform, With<Enemy>>){
+	let now = time.seconds_since_startup() as f32;
 	for mut transform in query.iter_mut(){
 		//current position
-		let x_org = transform.translation.x;
+		let (x_org, y_org) = (transform.translation.x, transform.translation.y);
 
 		//max distance
 		let max_distance = TIME_STEP * BASE_SPEED;
 
-		//compute target x
-		let x_dist = 5;
+		//fixtures (hardcoded)
+		let dir: f32 = -1.; //1 counter clockwise, -1 clockwise
+		let (x_pivot, y_pivot) = (0., 0.);
+		let (x_radius, y_radius) = (200., 130.);
+
+		//compute path
+		let angle = dir * BASE_SPEED * TIME_STEP * now % 360./ PI;
+
+		// compute target x/y
+		let x_dst = x_radius * angle.cos() + x_pivot;
+		let y_dst = y_radius * angle.sin() + y_pivot;
 
 		//compute distance
-		//let mut dx = 0.;
-		let dx = BASE_SPEED * TIME_STEP/4.;
-		let x = x_org - dx;
-		let distance_ratio = if x > 500.{dx} else if x < -495.{(BASE_SPEED * TIME_STEP/4.)}  else{-1. * dx};
-		
+		let dx = x_org - x_dst;
+		let dy = y_org - y_dst;
+		let distance = (dx*dx + dy*dy).sqrt();
+		let distance_ratio = if distance != 0. {max_distance / distance} else {0.};
+
+		//compute final
+		let x = x_org - dx * distance_ratio;
+		let x = if dx > 0. {x.max(x_dst)} else {x.min(x_dst)};
+		let y = y_org - dy * distance_ratio;
+		let y = if dy > 0. {y.max(x_dst)} else {y.min(x_dst)};
+
 		let translation = &mut transform.translation;
+		(translation.x, translation.y) = (x,y);
+
 		
+<<<<<<< HEAD
+=======
 		if x > 500.{
 			println!("greater than 500 im going right");
 			translation.x += dx * distance_ratio;
@@ -113,5 +134,6 @@ fn enemy_movement_system(collision: Query<&Transform, (With<Collider>, Without<E
 		}
 		//let x = if dx > 0. {x.max()} 
 		//translation.y += BASE_SPEED * TIME_STEP/4.;
+>>>>>>> d22debedcc9e9a77bce65d80c38dc3c78e53d527
 	}
 }

@@ -302,7 +302,6 @@ fn animate_player(
 				sprite.index = (sprite.index + 1) % (texture_atlas.textures.len()/3);
 			}
 
-			//info!("{:?}", sprite.index);
 
 			if  player.x_velocity < 0.0 {
 				transform.rotation = Quat::from_rotation_y(std::f32::consts::PI);
@@ -388,14 +387,14 @@ pub fn swing_axe(
 			if input.just_pressed(KeyCode::E) && collision.is_some() {
 				match collision.unwrap() {
 					Collision::Left => {
-						enemy_health.health -= 20.;
+						enemy_health.health -= 25.;
 						info!("{}", enemy_health.health);
 						if enemy_health.health <= 0. {
 							commands.entity(enemy_entity).despawn();
 						}
 					}
 					Collision::Inside => {
-						enemy_health.health -= 20.;
+						enemy_health.health -= 25.;
 						info!("{}", enemy_health.health);
 						if enemy_health.health <= 0. {
 							commands.entity(enemy_entity).despawn();
