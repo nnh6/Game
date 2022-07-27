@@ -6,7 +6,7 @@ use std::{
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-//use rand::Rng;
+use rand::prelude::*;
 use crate::{
 	//LEVEL_LEN,
 	WIN_W,
@@ -26,7 +26,7 @@ use crate::{
 };
 
 const T: u32 = 5;	//CA threshold value
-const N: usize = 20;	//number of seed walls
+const N: usize = 55;	//number of seed walls
 const P: u32 = 3;  //iterations of the CA to run
 
 // room.exits indexes
@@ -52,7 +52,7 @@ pub struct Door;
 #[derive(Component,Copy,Clone,Debug)]
 pub struct Room
 {
-	seed_wall_locations: [u32;N],
+	seed_wall_locations: [usize;N],
 	room_coords:[[char;ROOM_WIDTH]; ROOM_HEIGHT], //array of tiles in the room
 	exits: [bool;4],
 }
@@ -139,13 +139,13 @@ fn load_level(
 		LoadingAssetInfo::for_handle(door_handle.clone_untyped(), &asset_server),
 	);
 	commands.insert_resource(DoorImage(door_handle));
-	info!("{}", generate_room([true, false, false, false]));
+	info!("{}", generate_room([false, true, true, false]));
 
 }
 
 fn setup_level(
 	mut commands: Commands,
-	mut map_query: Query<(&mut Map)>,
+	mut map_query: Query<&mut Map>,
 	texture_atlases: Res<Assets<TextureAtlas>>,	
 	background_image: Res<BackgroundImage>,
 	door_image: Res<DoorImage>,
@@ -269,7 +269,7 @@ fn read_map(
 					//needs case for directional exit markers
 					
 					_=> {
-						info!("{}", char);
+						//info!("{}", char);
 						current_room.room_coords[x%9][y%16] = char;
 						//default case
 					}
@@ -317,7 +317,7 @@ fn generate_room(exits: [bool;4]) -> Room {
 	
 
 
-	for p in 0..P {
+	for _p in 0..P {
 		for i in 1..ROOM_HEIGHT-1 {
 			for j in 1..ROOM_WIDTH-1 {
 				let mut neighboring_walls = 0;
@@ -339,9 +339,12 @@ fn generate_room(exits: [bool;4]) -> Room {
 	return new_room;
 }
 
-fn gen_seed_wall_locations() -> [u32;N] {
-	let arr = [42,25,56,128,56,108,32,70,139,65,105,70,84,121,129,82,63,70,125,113];
-	//Rng::gen_range(0..ROOM_HEIGHT*ROOM_WIDTH);
-	 
+fn gen_seed_wall_locations() -> [usize;N] {
+	let mut rng = thread_rng();
+	let mut arr: [usize;N] = [0;N];	
+	for num in arr.iter_mut() {
+		*num = rng.gen_range(0..ROOM_WIDTH*ROOM_HEIGHT);
+	} 
+	info!("{:?}", arr);
 	return arr;
 }
