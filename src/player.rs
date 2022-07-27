@@ -34,6 +34,7 @@ pub struct Player{
 	x_velocity: f32,
 	grounded: bool,
 	bombs: f32,
+	swing: bool,
 }
 
 //BOMB
@@ -50,6 +51,9 @@ pub struct BombSheet(Handle<TextureAtlas>);
 
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(Timer);
+
+#[derive(Component, Deref, DerefMut)]
+pub struct SwingTimer(Timer);
 
 #[derive(Component, Deref, DerefMut)]
 pub struct InvincibilityTimer(Timer);
@@ -110,6 +114,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(animate_player)
 					.with_system(enter_door)
 					.with_system(swing_axe)
+					.with_system(animate_swing)
 					.with_system(update_health)
 					.with_system(check_enemy_collision)
 					//BOMB
@@ -190,6 +195,7 @@ fn spawn_player(
 			..default()
 		})
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+		.insert(SwingTimer(Timer::from_seconds(0.12, true)))
 		.insert(Velocity::new())
 		.insert(InvincibilityTimer(Timer::from_seconds(INV_TIME, false)))
 		.insert(Health::new())
@@ -198,6 +204,7 @@ fn spawn_player(
 			y_velocity: -1.0,
 			x_velocity: 0.,
 			bombs: 3., //starting with 3 bombs for testing
+			swing: false,
 		});
 }
 
@@ -279,10 +286,10 @@ fn animate_player(
 	>,
 ){
 	for (player, mut sprite, texture_atlas_handle, mut timer, invTimer,health,mut transform) in player.iter_mut() {
-		if input.just_pressed(KeyCode::E){
-				let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-				sprite.index = (sprite.index + 1) % (texture_atlas.textures.len()/3)+ (texture_atlas.textures.len()/3)+ (texture_atlas.textures.len()/3);
-			}
+		// if input.just_pressed(KeyCode::E){
+		// 		let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+		// 		sprite.index = (sprite.index + 1) % (texture_atlas.textures.len()/3)+ (texture_atlas.textures.len()/3)+ (texture_atlas.textures.len()/3);
+		// 	}
 		let velocity = Vec2::new(player.x_velocity, player.y_velocity);
 		if velocity.cmpne(Vec2::ZERO).any() {
 			timer.tick(time.delta());
@@ -295,7 +302,7 @@ fn animate_player(
 				sprite.index = (sprite.index + 1) % (texture_atlas.textures.len()/3);
 			}
 
-			
+			//info!("{:?}", sprite.index);
 
 			if  player.x_velocity < 0.0 {
 				transform.rotation = Quat::from_rotation_y(std::f32::consts::PI);
@@ -402,6 +409,47 @@ pub fn swing_axe(
 		}
 	}
 }
+
+fn animate_swing( //not complete yet
+	time: Res<Time>,
+	texture_atlases: Res<Assets<TextureAtlas>>,
+	input: Res<Input<KeyCode>>,
+	mut player: Query<
+		(
+			&mut Player,
+			&mut TextureAtlasSprite,
+			&Handle<TextureAtlas>,
+			&mut SwingTimer,
+			&mut Transform
+		),
+		With<Player>
+	>,
+	mut commands: Commands,
+){
+	//info!("tick");
+	//let (entity, mut bomb, mut sprite, texture_atlas_handle, mut timer) = bomb.single_mut();
+	for (mut player, mut sprite, texture_atlas_handle, mut timer, mut transform) in player.iter_mut() {
+		if input.just_pressed(KeyCode::E) || player.swing{
+			
+			if !player.swing || sprite.index < 8{
+				info!("setting to 8");
+				sprite.index = 8;
+			}
+			player.swing = true;
+			timer.tick(time.delta());
+			
+			if timer.just_finished() {
+				let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+				sprite.index = (sprite.index + 1);// % (texture_atlas.textures.len()/3)+ (texture_atlas.textures.len()/3)+ (texture_atlas.textures.len()/3);
+				//info!("{:?}", sprite.index);
+				if sprite.index == (texture_atlas.textures.len() - 1){
+					player.swing = false;
+					//sprite.index = 0;
+				}
+			}
+		}
+	}
+} 
 
 fn load_health_sheet(
 	mut commands: Commands,
