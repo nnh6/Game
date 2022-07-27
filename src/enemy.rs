@@ -103,37 +103,5 @@ fn enemy_movement_system(time: Res<Time>, mut query: Query<&mut Transform, With<
 		let translation = &mut transform.translation;
 		(translation.x, translation.y) = (x,y);
 
-		
-<<<<<<< HEAD
-=======
-		if x > 500.{
-			println!("greater than 500 im going right");
-			translation.x += dx * distance_ratio;
-		}
-		else if x <= -495. {
-			//println!("less than -495 im going right");
-			translation.x += BASE_SPEED * TIME_STEP/4. + 900.;
-			//translation.x += BASE_SPEED * TIME_STEP/4.;
-		}
-		// else if x > 1000.{
-		// 	translation.x += dx * distance_ratio;
-		// }
-		else{
-			//println!("wtf");
-			translation.x += dx * distance_ratio;
-		}
-		//translation.x += BASE_SPEED * TIME_STEP/4.;
-		// println!("current x = {}", x);
-		// println!("current dist_ratio = {}", distance_ratio);
-
-		let target = transform.translation + Vec3::new(dx, 0., 0.);
-		if check_tile_collision(target, &collision){
-			//println!("HIT!");
-			transform.translation = target;
-			
-		}
-		//let x = if dx > 0. {x.max()} 
-		//translation.y += BASE_SPEED * TIME_STEP/4.;
->>>>>>> d22debedcc9e9a77bce65d80c38dc3c78e53d527
 	}
 }
