@@ -47,7 +47,8 @@ pub struct Background;
 #[derive(Component)]
 pub struct Door;
 
-
+#[derive(Component)]
+pub struct Unbreakable;
 
 #[derive(Component,Copy,Clone,Debug)]
 pub struct Room
@@ -223,6 +224,25 @@ fn setup_level(
 						.insert(Enemy);
 					i += 1;
 				}
+				'U'=> {
+					commands
+						.spawn_bundle(SpriteSheetBundle {
+							texture_atlas: brick_sheet.0.clone(),
+							sprite: TextureAtlasSprite {
+								index: i % brick_len,
+								..default()
+							},
+							transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0), // positions the bricks starting from the top-left (I hope)
+								..default()
+							},
+							..default()
+						})
+						.insert(Brick)
+						.insert(Collider)
+						.insert(Unbreakable);
+						i += 1;
+				}
 				_=> {
 					
 					//default case
@@ -302,13 +322,13 @@ fn generate_room(exits: [bool;4]) -> Room {
 		for (j, character) in row.iter_mut().enumerate() {
 			if (i == 0 && !exits[TOP])|| (j == 0 && !exits[LEFT]) || (i == ROOM_HEIGHT - 1 && !exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && !exits[RIGHT]){
 				//surround outside of room with walls
-				*character = '#';
+				*character = 'U';
 			}
 
 			//place seed walls
 			cell_count += 1;
 			for location in new_room.seed_wall_locations {
-				if cell_count == location {
+				if cell_count == location && *character != 'U'{
 					*character = '#';
 				}
 			}
@@ -321,14 +341,14 @@ fn generate_room(exits: [bool;4]) -> Room {
 		for i in 1..ROOM_HEIGHT-1 {
 			for j in 1..ROOM_WIDTH-1 {
 				let mut neighboring_walls = 0;
-				if new_room.room_coords[i-1][j-1] == '#' {neighboring_walls += 1;}
-				if new_room.room_coords[i-1][j] == '#' {neighboring_walls += 1;}
-				if new_room.room_coords[i-1][j+1] == '#' {neighboring_walls += 1;}
-				if new_room.room_coords[i][j-1] == '#' {neighboring_walls += 1;}
-				if new_room.room_coords[i][j+1] == '#' {neighboring_walls += 1;}
-				if new_room.room_coords[i+1][j-1] == '#' {neighboring_walls += 1;}
-				if new_room.room_coords[i+1][j] == '#' {neighboring_walls += 1;}
-				if new_room.room_coords[i+1][j+1] == '#' {neighboring_walls += 1;}
+				if new_room.room_coords[i-1][j-1] == '#' || new_room.room_coords[i-1][j-1] == 'U' {neighboring_walls += 1;}
+				if new_room.room_coords[i-1][j] == '#' || new_room.room_coords[i-1][j] == 'U' {neighboring_walls += 1;}
+				if new_room.room_coords[i-1][j+1] == '#' || new_room.room_coords[i-1][j+1] == 'U' {neighboring_walls += 1;}
+				if new_room.room_coords[i][j-1] == '#' || 	new_room.room_coords[i][j-1] == 'U' {neighboring_walls += 1;}
+				if new_room.room_coords[i][j+1] == '#' || new_room.room_coords[i][j+1] == 'U' {neighboring_walls += 1;}
+				if new_room.room_coords[i+1][j-1] == '#' || new_room.room_coords[i+1][j-1] == 'U' {neighboring_walls += 1;}
+				if new_room.room_coords[i+1][j] == '#' || new_room.room_coords[i+1][j] == 'U' {neighboring_walls += 1;}
+				if new_room.room_coords[i+1][j+1] == '#' || new_room.room_coords[i+1][j+1] == 'U' {neighboring_walls += 1;}
 	
 				if neighboring_walls >= T {
 					new_room.room_coords[i][j] = '#';
