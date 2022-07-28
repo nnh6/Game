@@ -12,14 +12,14 @@ mod music;
 
 mod enemy;
 mod start_menu;
-mod bomb_item;
+mod bomb;
 
 use loading::LoadingPlugin;
 use level::LevelPlugin;
 use player::PlayerPlugin;
 use enemy::EnemyPlugin;
 use start_menu::MainMenuPlugin;
-use bomb_item::BombPlugin;
+use bomb::BombPlugin;
 
 const TITLE: &str = "Miner Pitfall!";
 const WIN_W: f32 = 1280.;
