@@ -129,7 +129,7 @@ impl Plugin for PlayerPlugin {
 			.add_enter_system(GameState::Playing, spawn_health)
 			//BOMB
 			.add_enter_system(GameState::Loading, load_bomb_sheet)
-			//.add_enter_system(GameState::Playing, spawn_bomb)
+			.add_enter_system(GameState::Playing, spawn_bomb)
 			//.add_system(player_fire_system)
 			/*.add_system_set(
 				ConditionSet::new()
@@ -600,7 +600,7 @@ fn bomb_throw(
 	}
 }
 
-//BOMB_WEAPON/////////////////
+//BOMB/////////////////
 fn load_bomb_sheet(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
