@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use std::time::Duration;
 
+
+
 use crate::{
 	//for example bomb spawn
 	//WIN_W,
@@ -13,7 +15,11 @@ use crate::{
 		LoadingAssets,
 		LoadingAssetInfo,
 	},
-	FRAME_TIME,
+	FRAME_TIME, level::BombItem,
+	player::{
+		Player,
+		PlayerSheet
+	}
 };
 
 #[derive(Component)]
@@ -35,29 +41,30 @@ struct FixedStep;
 pub struct BombPlugin;
 impl Plugin for BombPlugin {
 	fn build (&self, app: &mut App) {
-		let every_second = SystemStage::parallel();
-		let mut every_frame = SystemStage::parallel();
-
+		//let every_second = SystemStage::parallel();
+		//let mut every_frame = SystemStage::parallel();
+		/* 
 		every_frame.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
-					//.with_system(animate_bomb)
+					.with_system(animate_bomb)
 					.into()
 					);
-
+		 */
 		app.add_enter_system(GameState::Loading, load_bomb_sheet)
-		//.add_enter_system(GameState::Playing, spawn_bomb)
+		.add_enter_system(GameState::Playing, spawn_bomb);
+		/* 
 		.add_stage_before(
 			CoreStage::Update,
 			FixedStep,
 			FixedTimestepStage::from_stage(Duration::from_micros(16667), every_frame) // ~1 frame at 60 fps
+		*/
 		//)
 		//.add_stage_before(
 		//	CoreStage::Update,
 		//	FixedStep,
 		//	FixedTimestepStage::new(Duration::from_secs(1))
 		//		.with_stage(every_second)
-		);
 	}
 }
 
@@ -93,15 +100,19 @@ fn spawn_bomb(
 			transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
 			..default()
 		})
+		/* 
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		//.insert(Velocity::new())
+		*/
 		.insert(Bomb{
 			//grounded: false,
 			y_velocity: 0., //-1.0,
 			x_velocity: 0.,
-		});
-
+		}) 
+		.insert(BombItem);
 }
+
+
 
 fn animate_bomb( //not complete yet
 	time: Res<Time>,

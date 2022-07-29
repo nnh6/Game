@@ -26,6 +26,7 @@ use crate::{
 		Enemy,
 		EnemySheet
 	},
+	level::BombItem
 };
 
 #[derive(Component)]
@@ -118,6 +119,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(update_health)
 					.with_system(check_enemy_collision)
 					//BOMB
+					.with_system(check_player_bomb_pickup_collision)
 					.with_system(animate_bomb)
 					.with_system(bomb_throw)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
@@ -600,7 +602,7 @@ fn bomb_throw(
 	}
 }
 
-//BOMB/////////////////
+//BOMB_WEAPON/////////////////
 fn load_bomb_sheet(
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
@@ -634,7 +636,7 @@ fn spawn_bomb(
 			transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
 			..default()
 		})
-		//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		//.insert(Velocity::new())
 		.insert(Bomb{
 			//grounded: false,
@@ -680,4 +682,36 @@ fn animate_bomb( //not complete yet
 	}
 } 
 
+pub fn check_player_bomb_pickup_collision(
+	mut commands: Commands,
+	mut player_query: Query<
+		(
+			&Transform, 
+			&mut Player
+		),
+			(
+				With<Player>, 
+				Without<BombItem>
+			)>,
+	mut bomb_query: Query<
+		(
+			Entity, 
+			&Transform,
+		),
+		(With<BombItem>,
+		Without<Player>)
+		>,
+) {
+	
+
+	for (bomb_entity, bomb_transform)  in bomb_query.iter(){
+		info!("bp check"); 
+		let (player_transform, mut player) = player_query.single_mut();
+		if collide(player_transform.translation, Vec2::splat(50.), bomb_transform.translation, Vec2::splat(50.)).is_some() {
+				info!("bomb picked up");
+				player.bombs = 3.0;
+				commands.entity(bomb_entity).despawn();
+		}
+	}
+}
 //bomb collision if touch a neutral bomb, collect it
