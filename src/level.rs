@@ -23,6 +23,7 @@ use crate::{
 	},
 	player::*,
 	enemy::*,
+	boss::*
 };
 
 const T: u32 = 5;	//CA threshold value
@@ -169,6 +170,7 @@ fn setup_level(
 	door_image: Res<DoorImage>,
 	brick_sheet: Res<BrickSheet>,
 	enemy_sheet: Res<EnemySheet>,
+	boss_sheet: Res<BossSheet>,
 	bomb_sheet: Res<BombItemSheet>,
 ) {
 	commands
@@ -240,6 +242,24 @@ fn setup_level(
 						})
 						.insert(Health::new())
 						.insert(Enemy);
+					i += 1;
+				}
+				'T'=> {
+					commands
+						.spawn_bundle(SpriteSheetBundle {
+							texture_atlas: boss_sheet.clone(),
+							sprite: TextureAtlasSprite {
+								index: 0,
+								..default()
+							},
+							transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
+								..default()
+							},
+							..default()
+						})
+						.insert(Health::new())
+						.insert(Boss);
 					i += 1;
 				}
 				'U'=> {

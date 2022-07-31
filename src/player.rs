@@ -26,7 +26,8 @@ use crate::{
 		Enemy,
 		EnemySheet
 	},
-	level::BombItem
+	level::BombItem,
+	boss::Boss,
 };
 
 #[derive(Component)]
@@ -122,6 +123,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(check_player_bomb_pickup_collision)
 					.with_system(animate_bomb)
 					.with_system(bomb_throw)
+					.with_system(enter_new_room)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -522,7 +524,7 @@ fn update_health(
 
 fn update_health(
 	//texture_atlases: Res<Assets<TextureAtlas>>,
-	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>)>,
+	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>,Without<Boss>)>,
 	mut player: Query<&Health, With<Player>>
 ){//not completed
 	
@@ -682,7 +684,7 @@ fn animate_bomb( //not complete yet
 	}
 } 
 
-pub fn check_player_bomb_pickup_collision(
+fn check_player_bomb_pickup_collision(
 	mut commands: Commands,
 	mut player_query: Query<
 		(
@@ -705,13 +707,31 @@ pub fn check_player_bomb_pickup_collision(
 	
 
 	for (bomb_entity, bomb_transform)  in bomb_query.iter(){
-		info!("bp check"); 
+		//info!("bp check"); 
 		let (player_transform, mut player) = player_query.single_mut();
 		if collide(player_transform.translation, Vec2::splat(50.), bomb_transform.translation, Vec2::splat(50.)).is_some() {
-				info!("bomb picked up");
+				//info!("bomb picked up");
 				player.bombs = 3.0;
 				commands.entity(bomb_entity).despawn();
 		}
 	}
+}//bomb collision if touch a neutral bomb, collect it
+
+fn enter_new_room(
+	player: Query<&Transform,With<Player>>,
+){
+	for player_transform in player.iter() {
+		if player_transform.translation.y >= WIN_H/2.0-TILE_SIZE/2.0 {
+			info!("newroom up");
+		}
+		else if player_transform.translation.x <= -WIN_W/2.0+TILE_SIZE/2.0{
+			info!("newroom left");
+		}
+		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 {
+			info!("newroom right");
+		}
+		else if player_transform.translation.y < -WIN_H/2.0+TILE_SIZE/2.0 {
+			info!("newroom down");
+		}
+	}
 }
-//bomb collision if touch a neutral bomb, collect it

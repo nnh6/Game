@@ -9,7 +9,7 @@ mod loading;
 mod player;
 mod level;
 mod music;
-
+mod boss;
 mod enemy;
 mod start_menu;
 mod bomb_item;
@@ -20,6 +20,7 @@ use player::PlayerPlugin;
 use enemy::EnemyPlugin;
 use start_menu::MainMenuPlugin;
 use bomb_item::BombPlugin;
+use boss::BossPlugin;
 
 const TITLE: &str = "Miner Pitfall!";
 const WIN_W: f32 = 1280.;
@@ -107,6 +108,7 @@ fn main() {
 		.add_plugin(EnemyPlugin)
 		.add_plugin(MainMenuPlugin)
 		.add_plugin(BombPlugin)
+		.add_plugin(BossPlugin)
 		.run();
 }
 
