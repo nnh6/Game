@@ -94,11 +94,14 @@ impl Map
 		Self{map_coords: [[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
 	}
 }
+#[derive(Component)]
+pub struct BombItem;
 
 // Will need to access these with .0, not deriving Deref/DerefMut
 pub struct BackgroundImage(Handle<Image>);
 pub struct DoorImage(Handle<Image>);
 pub struct BrickSheet(Handle<TextureAtlas>);
+pub struct BombItemSheet(Handle<TextureAtlas>);
 
 pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
@@ -115,6 +118,7 @@ fn load_level(
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,	
 	mut loading_assets: ResMut<LoadingAssets>,
 ) {
+	//Background
 	let bg_texture_handle = asset_server.load("small_bg.png");
 	
 	loading_assets.0.insert(
@@ -123,6 +127,7 @@ fn load_level(
 	);
 	commands.insert_resource(BackgroundImage(bg_texture_handle));
 
+	//Brick
 	let brick_handle = asset_server.load("tiles.png");
 	loading_assets.0.insert(
 		brick_handle.clone_untyped(),
@@ -134,6 +139,7 @@ fn load_level(
 
 	commands.insert_resource(BrickSheet(brick_atlas_handle));
 
+	//Door
 	let door_handle = asset_server.load("door.png");
 	loading_assets.0.insert(
 		door_handle.clone_untyped(),
@@ -142,6 +148,17 @@ fn load_level(
 	commands.insert_resource(DoorImage(door_handle));
 	info!("{}", generate_room([false, true, true, false]));
 
+	//Bomb
+	let bomb_handle = asset_server.load("bomb_boom.png");
+	loading_assets.0.insert(
+		bomb_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(bomb_handle.clone_untyped(), &asset_server),
+	);
+
+	let bomb_atlas = TextureAtlas::from_grid(bomb_handle, Vec2::splat(35.), 6, 1);
+	let bomb_atlas_handle = texture_atlases.add(bomb_atlas);
+
+	commands.insert_resource(BombItemSheet(bomb_atlas_handle));
 }
 
 fn setup_level(
@@ -152,6 +169,7 @@ fn setup_level(
 	door_image: Res<DoorImage>,
 	brick_sheet: Res<BrickSheet>,
 	enemy_sheet: Res<EnemySheet>,
+	bomb_sheet: Res<BombItemSheet>,
 ) {
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -242,6 +260,27 @@ fn setup_level(
 						.insert(Collider)
 						.insert(Unbreakable);
 						i += 1;
+				}
+				'B'=> {
+					commands
+					.spawn_bundle(SpriteSheetBundle {
+						texture_atlas: bomb_sheet.0.clone(),
+						sprite: TextureAtlasSprite {
+							index: 0,
+							..default()
+						},
+						//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
+						transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
+								..default()
+							},
+						..default()
+					})
+					//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+					//.insert(Velocity::new())
+					.insert(BombItem);
+					//ENEMY CODE
+					i += 1;
 				}
 				_=> {
 					
