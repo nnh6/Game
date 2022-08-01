@@ -29,6 +29,7 @@ use crate::{
 		EnemySheet
 	},
 	level::BombItem,
+	level::HealthItem,
 	boss::Boss,
 };
 
@@ -123,6 +124,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(check_enemy_collision)
 					//BOMB
 					.with_system(check_player_bomb_pickup_collision)
+					.with_system(check_player_health_pickup_collision)
 					.with_system(animate_bomb)
 					.with_system(bomb_throw)
 					.with_system(enter_new_room)
@@ -810,6 +812,40 @@ fn enter_new_room(
 		else if player_transform.translation.y < -WIN_H/2.0+TILE_SIZE/2.0 {
 			
 			info!("newroom down");
+		}
+	}
+}
+
+fn check_player_health_pickup_collision(
+	mut commands: Commands,
+	mut player_query: Query<
+		(
+			&Transform, 
+			&mut Player,
+			&mut Health,
+		),
+			(
+				With<Player>, 
+				Without<BombItem>
+			)>,
+	mut hp_query: Query<
+		(
+			Entity, 
+			&Transform,
+		),
+		(With<HealthItem>,
+		Without<Player>)
+		>,
+) {
+	
+
+	for (hp_entity, health_transform)  in hp_query.iter(){
+		//info!("bp check"); 
+		let (player_transform, mut player, mut health) = player_query.single_mut();
+		if collide(player_transform.translation, Vec2::splat(50.), health_transform.translation, Vec2::splat(50.)).is_some() {
+				//info!("bomb picked up");
+				health.health = 100.0;
+				commands.entity(hp_entity).despawn();
 		}
 	}
 }

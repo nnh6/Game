@@ -99,11 +99,15 @@ impl Map
 #[derive(Component)]
 pub struct BombItem;
 
+#[derive(Component)]
+pub struct HealthItem;
+
 // Will need to access these with .0, not deriving Deref/DerefMut
 pub struct BackgroundImage(Handle<Image>);
 pub struct DoorImage(Handle<Image>);
 pub struct BrickSheet(Handle<TextureAtlas>);
 pub struct BombItemSheet(Handle<TextureAtlas>);
+pub struct HealthItemSheet(Handle<TextureAtlas>);
 
 pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
@@ -112,8 +116,7 @@ impl Plugin for LevelPlugin {
 			.add_enter_system(GameState::Loading, read_map)
 			.add_enter_system(GameState::Playing, setup_level)
 			.add_enter_system(GameState::Traverse,despawn_all)
-			.add_enter_system(GameState::Loading, load_level)
-			.add_enter_system(GameState::Traverse, read_map)
+			.add_enter_system(GameState::Traverse, setup_level)
 			.add_enter_system(GameState::Traverse,enter_game)
 			;
 	}
@@ -166,6 +169,18 @@ fn load_level(
 	let bomb_atlas_handle = texture_atlases.add(bomb_atlas);
 
 	commands.insert_resource(BombItemSheet(bomb_atlas_handle));
+
+	//Health
+	let hp_handle = asset_server.load("Health_Item.png");
+	loading_assets.0.insert(
+		hp_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(hp_handle.clone_untyped(), &asset_server),
+	);
+
+	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::new(45.,35.), 1, 1);
+	let hp_atlas_handle = texture_atlases.add(hp_atlas);
+
+	commands.insert_resource(HealthItemSheet(hp_atlas_handle));
 }
 
 fn setup_level(
@@ -178,6 +193,7 @@ fn setup_level(
 	enemy_sheet: Res<EnemySheet>,
 	boss_sheet: Res<BossSheet>,
 	bomb_sheet: Res<BombItemSheet>,
+	hp_sheet: Res<HealthItemSheet>
 ) {
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -306,6 +322,27 @@ fn setup_level(
 					//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 					//.insert(Velocity::new())
 					.insert(BombItem);
+					//ENEMY CODE
+					i += 1;
+				}
+				'H'=> {
+					commands
+					.spawn_bundle(SpriteSheetBundle {
+						texture_atlas: hp_sheet.0.clone(),
+						sprite: TextureAtlasSprite {
+							index: 0,
+							..default()
+						},
+						//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
+						transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)-23.0, 900.0),
+								..default()
+							},
+						..default()
+					})
+					//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+					//.insert(Velocity::new())
+					.insert(HealthItem);
 					//ENEMY CODE
 					i += 1;
 				}
