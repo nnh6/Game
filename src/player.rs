@@ -339,6 +339,7 @@ pub fn check_enemy_collision(
 	mut commands: Commands,
 	_enemy_sheet: Res<EnemySheet>,
 	enemy_query: Query<&Transform, (With<Enemy>, Without<Player>)>,
+	boss_query: Query<&Transform, (With<Boss>, Without<Player>)>,
 	mut player_query: Query<
 		(
 			Entity, 
@@ -358,6 +359,27 @@ pub fn check_enemy_collision(
 
 	for enemy_transform in enemy_query.iter() {
 		if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() && inv_timer.finished() {
+  				inv_timer.reset(); //reset the invincibility
+  				player_health.health -= 20.;
+  				//call update health here for more efficiency 
+  			
+  				//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+  				//let hs_len : usize = texture_atlas.textures.len() as usize;
+  				//let c_health : usize = (player_health.health/10.).round() as usize;
+  				//sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
+  	
+  				info!("{}", player_health.health);
+  				if player_health.health <= 0. {
+  					//player dies
+  					commands.insert_resource(NextState(GameState::GameOver));
+  					commands.entity(player_entity).despawn();
+  				}
+  			}
+	}
+	inv_timer.tick(Duration::from_secs_f32(FRAME_TIME)); //tick the invincibility timer after we're done checking collision
+
+	for boss_transform in boss_query.iter() {
+		if collide(player_transform.translation, Vec2::splat(50.), boss_transform.translation, Vec2::new(260.,100.)).is_some() && inv_timer.finished() {
   				inv_timer.reset(); //reset the invincibility
   				player_health.health -= 20.;
   				//call update health here for more efficiency 

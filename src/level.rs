@@ -23,7 +23,8 @@ use crate::{
 	},
 	player::*,
 	enemy::*,
-	boss::*
+	boss::*,
+	
 };
 
 const T: u32 = 5;	//CA threshold value
@@ -253,13 +254,13 @@ fn setup_level(
 								..default()
 							},
 							transform: Transform {
-								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)+37.0, 900.0),
 								..default()
 							},
 							..default()
 						})
 						.insert(Health::new())
-						.insert(Boss);
+						.insert(Boss{health:100.0,y_velocity:0.0,y_accel:0.0,x_velocity:0.0,last_move: 0.0,turtled:false,path: Vec3::new(0.,0.,0.)});
 					i += 1;
 				}
 				'U'=> {
@@ -291,7 +292,7 @@ fn setup_level(
 						},
 						//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
 						transform: Transform {
-								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)-23.0, 900.0),
 								..default()
 							},
 						..default()
