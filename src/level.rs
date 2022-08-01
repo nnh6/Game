@@ -81,10 +81,10 @@ impl fmt::Display for Room {
 	}
 }
 
-#[derive(Component,Copy,Clone)]
+#[derive(Component,Clone)]
 pub struct Map
 {
-	map_coords:[[Room;MAP_WIDTH]; MAP_HEIGHT], //array of rooms on the map
+	map_coords: Vec<[Room;MAP_WIDTH]> , //array of rooms on the map
 	x_coords: usize,
 	y_coords: usize, //coordinates for location of the current room
 }
@@ -92,7 +92,7 @@ pub struct Map
 impl Map
 {
 	pub fn new() -> Self {
-		Self{map_coords: [[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
+		Self{map_coords: vec![[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
 	}
 }
 #[derive(Component)]
@@ -464,6 +464,13 @@ fn generate_room(exits: [bool;4]) -> Room {
 				if neighboring_walls >= T {
 					new_room.room_coords[i][j] = '#';
 				}
+			}
+		}
+	}
+	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
+		for (j, character) in row.iter_mut().enumerate() {
+			if (i == 0 && exits[TOP])|| (j == 0 && exits[LEFT]) || (i == ROOM_HEIGHT - 1 && exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && exits[RIGHT]){
+				*character = '*';//place the exits at the end
 			}
 		}
 	}
