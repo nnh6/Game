@@ -207,6 +207,7 @@ fn setup_level(
 							},
 							..default()
 						})
+						.insert(Health::new())
 						.insert(Brick)
 						.insert(Collider);
 						i += 1;

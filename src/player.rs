@@ -22,6 +22,7 @@ use crate::{
 	},
 	level::Door,
 	level::Collider,
+	level::Brick,
 	enemy::{
 		Enemy,
 		EnemySheet
@@ -122,6 +123,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(check_player_bomb_pickup_collision)
 					.with_system(animate_bomb)
 					.with_system(bomb_throw)
+					.with_system(damage_walls)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -522,7 +524,7 @@ fn update_health(
 
 fn update_health(
 	//texture_atlases: Res<Assets<TextureAtlas>>,
-	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>)>,
+	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>,Without<Brick>)>,
 	mut player: Query<&Health, With<Player>>
 ){//not completed
 	
@@ -644,6 +646,42 @@ fn spawn_bomb(
 			x_velocity: 0.,
 		});
 
+}
+
+pub fn damage_walls(
+	mut wall_query: Query<(Entity, &Transform, &mut Health), (With<Brick>, Without<Player>, Without<Enemy>)>,
+	player_query: Query<&Transform, (With<Player>, Without<Enemy>, Without<Brick>)>,
+	input: Res<Input<KeyCode>>,
+	mut commands: Commands,
+) {
+	for player_transform in player_query.iter() {
+		for (wall_entity, wall_transform, mut wall_health) in wall_query.iter_mut() {
+			let collision = collide(player_transform.translation, Vec2::new(100., 60.), wall_transform.translation, Vec2::splat(80.));
+			if input.just_pressed(KeyCode::E) && collision.is_some() {
+				match collision.unwrap() {
+					Collision::Left => {
+						wall_health.health -= 20.;
+						info!("{}", wall_health.health);
+						//info!("Left");
+						if wall_health.health <= 0. {
+							commands.entity(wall_entity).despawn();
+						}
+					}
+					Collision::Right => {
+						wall_health.health -= 20.;
+						info!("{}", wall_health.health);
+						//info!("Right");
+						if wall_health.health <= 0. {
+							commands.entity(wall_entity).despawn();
+						}
+					}
+					_ => {
+						//nothing
+					}
+				}
+			}
+		}
+	}
 }
 
 fn animate_bomb( //not complete yet
