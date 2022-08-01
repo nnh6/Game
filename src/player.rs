@@ -23,6 +23,7 @@ use crate::{
 	level::Door,
 	level::Collider,
 	level::Brick,
+	level::Map,
 	enemy::{
 		Enemy,
 		EnemySheet
@@ -779,19 +780,35 @@ fn check_player_bomb_pickup_collision(
 }//bomb collision if touch a neutral bomb, collect it
 
 fn enter_new_room(
-	player: Query<&Transform,With<Player>>,
+	mut player: Query<&mut Transform,With<Player>>,
+	mut mapq: Query<&mut Map>,
+	mut commands: Commands,
 ){
-	for player_transform in player.iter() {
+	//move player
+	//update map coords
+	//despawn?
+	//enter loading state
+	let mut map = mapq.single_mut();
+	for mut player_transform in player.iter_mut() {
 		if player_transform.translation.y >= WIN_H/2.0-TILE_SIZE/2.0 {
-			info!("newroom up");
+			player_transform.translation.y = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			map.y_coords += 1 as usize;
+			//info!("newroom up");
 		}
 		else if player_transform.translation.x <= -WIN_W/2.0+TILE_SIZE/2.0{
+			player_transform.translation.x = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			map.x_coords -= 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom left");
 		}
 		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 {
+			player_transform.translation.x = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			map.x_coords += 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom right");
 		}
 		else if player_transform.translation.y < -WIN_H/2.0+TILE_SIZE/2.0 {
+			
 			info!("newroom down");
 		}
 	}

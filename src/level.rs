@@ -86,8 +86,8 @@ impl fmt::Display for Room {
 pub struct Map
 {
 	map_coords:[[Room;MAP_WIDTH]; MAP_HEIGHT], //array of rooms on the map
-	x_coords: usize,
-	y_coords: usize, //coordinates for location of the current room
+	pub x_coords: usize,
+	pub y_coords: usize, //coordinates for location of the current room
 }
 
 impl Map
@@ -110,7 +110,12 @@ impl Plugin for LevelPlugin {
 	fn build (&self, app: &mut App) {
 		app.add_enter_system(GameState::Loading, load_level)
 			.add_enter_system(GameState::Loading, read_map)
-			.add_enter_system(GameState::Playing, setup_level);
+			.add_enter_system(GameState::Playing, setup_level)
+			.add_enter_system(GameState::Traverse,despawn_all)
+			.add_enter_system(GameState::Loading, load_level)
+			.add_enter_system(GameState::Traverse, read_map)
+			.add_enter_system(GameState::Traverse,enter_game)
+			;
 	}
 }
 
@@ -433,4 +438,19 @@ fn gen_seed_wall_locations() -> [usize;N] {
 	} 
 	info!("{:?}", arr);
 	return arr;
+}
+
+fn despawn_all(
+	mut entity: Query<Entity>,
+	mut commands: Commands
+){
+	for e in entity.iter_mut() {
+        commands.entity(e).despawn();
+    }
+}
+
+fn enter_game(
+	mut commands: Commands
+){
+	commands.insert_resource(NextState(GameState::Playing));
 }
