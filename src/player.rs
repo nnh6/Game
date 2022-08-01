@@ -700,6 +700,16 @@ pub fn damage_walls(
 							commands.entity(wall_entity).despawn();
 						}
 					}
+					Collision::Top => {
+						if (input.just_pressed(KeyCode::S)) {
+							wall_health.health -= 20.;
+							info!("{}", wall_health.health);
+							//info!("Right");
+							if wall_health.health <= 0. {
+								commands.entity(wall_entity).despawn();
+							}
+						}
+					}
 					_ => {
 						//nothing
 					}
