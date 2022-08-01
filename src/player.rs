@@ -194,6 +194,7 @@ fn spawn_player(
 	mut commands: Commands,
 	player_sheet: Res<PlayerSheet>,
 ){
+	
 	commands
 		.spawn_bundle(SpriteSheetBundle {
 			texture_atlas: player_sheet.clone(),
@@ -805,7 +806,7 @@ fn enter_new_room(
 		}
 		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 {
 			player_transform.translation.x = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
-			map.x_coords += 1 as usize;
+			//map.x_coords += 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom right");
 		}

@@ -116,8 +116,6 @@ impl Plugin for LevelPlugin {
 			.add_enter_system(GameState::Loading, read_map)
 			.add_enter_system(GameState::Playing, setup_level)
 			.add_enter_system(GameState::Traverse,despawn_all)
-			.add_enter_system(GameState::Traverse, setup_level)
-			.add_enter_system(GameState::Traverse,enter_game)
 			;
 	}
 }
@@ -212,6 +210,8 @@ fn setup_level(
 	let brick_len = brick_atlas.unwrap().len();
 	let map = map_query.single_mut();
 	let current_room = map.map_coords[map.x_coords][map.y_coords];
+	//generate and store new room if OOB
+	
 	let mut i = 0;
 	let t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
 	for(y, line) in current_room.room_coords.iter().enumerate() { //read each line from map
@@ -478,16 +478,11 @@ fn gen_seed_wall_locations() -> [usize;N] {
 }
 
 fn despawn_all(
-	mut entity: Query<Entity>,
+	mut entity: Query<Entity,(Without<Map>)>,
 	mut commands: Commands
 ){
 	for e in entity.iter_mut() {
         commands.entity(e).despawn();
     }
-}
-
-fn enter_game(
-	mut commands: Commands
-){
 	commands.insert_resource(NextState(GameState::Playing));
 }
