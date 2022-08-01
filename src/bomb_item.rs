@@ -51,8 +51,7 @@ impl Plugin for BombPlugin {
 					.into()
 					);
 		 */
-		app.add_enter_system(GameState::Loading, load_bomb_sheet)
-		.add_enter_system(GameState::Playing, spawn_bomb);
+		app.add_enter_system(GameState::Loading, load_bomb_sheet);
 		/* 
 		.add_stage_before(
 			CoreStage::Update,
@@ -86,31 +85,6 @@ fn load_bomb_sheet(
 	commands.insert_resource(BombSheet(bomb_atlas_handle));
 }
 
-fn spawn_bomb(
-	mut commands: Commands,
-	bomb_sheet: Res<BombSheet>,
-){
-	commands
-		.spawn_bundle(SpriteSheetBundle {
-			texture_atlas: bomb_sheet.clone(),
-			sprite: TextureAtlasSprite {
-				index: 0,
-				..default()
-			},
-			transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
-			..default()
-		})
-		/* 
-		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
-		//.insert(Velocity::new())
-		*/
-		.insert(Bomb{
-			//grounded: false,
-			y_velocity: 0., //-1.0,
-			x_velocity: 0.,
-		}) 
-		.insert(BombItem);
-}
 
 
 
