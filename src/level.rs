@@ -379,6 +379,7 @@ fn generate_room(exits: [bool;4]) -> Room {
 	let mut new_room = Room::new(exits);
 	let mut cell_count = 0;
 	let mut rng = thread_rng();
+	let door_here = rng.gen_range(0..100) == 50;
 
 	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
 		for (j, character) in row.iter_mut().enumerate() {
@@ -389,6 +390,14 @@ fn generate_room(exits: [bool;4]) -> Room {
 
 			if *character == '-' && rng.gen_range(0..35) == 5 {
 				*character = 'E';
+			}
+
+			if *character == '-' && rng.gen_range(0..100) == 10 {
+				*character = 'B';
+			}
+
+			if *character == '-' && rng.gen_range(0..15) == 3 {
+				*character = 'D';
 			}
 
 			//place seed walls
