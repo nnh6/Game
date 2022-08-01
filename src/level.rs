@@ -35,6 +35,7 @@ const RIGHT: usize = 1;
 const TOP: usize = 2;
 const BOTTOM: usize = 3;
 
+
 #[derive(Component)]
 pub struct Collider;
 
@@ -107,7 +108,7 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
 	fn build (&self, app: &mut App) {
 		app.add_enter_system(GameState::Loading, load_level)
-			.add_enter_system(GameState::Loading, read_map)
+			.add_enter_system(GameState::Loading, generate_map)
 			.add_enter_system(GameState::Playing, setup_level);
 	}
 }
@@ -290,6 +291,76 @@ fn setup_level(
 			}
 		}
     }
+}
+fn generate_map(
+	mut commands: Commands,
+	//mut rooms_query: Query<(&mut GennedRooms)>,
+	) {
+		let mut new_map = Map::new(); 
+		let mut rand_exits : [bool;4] = [true;4];
+		let mut rng = rand::thread_rng();
+		for i in 0..MAP_HEIGHT /*in new_map.map_coords.iter_mut().enumerate()*/ {
+			for j in 0..MAP_WIDTH/* in row.iter_mut().enumerate()*/ {
+				
+
+				if rng.gen_range(0..=1) == 0 {
+					rand_exits[BOTTOM] = false;
+				}
+				else {
+					rand_exits[BOTTOM] = true;
+				}
+				if rng.gen_range(0..=1) == 0 {
+					rand_exits[RIGHT] = false; 
+				}
+				else {
+					rand_exits[RIGHT] = true;
+				} //random assignments need to be at the top of the function in case we need to reassign them
+				
+				// we only randomly generate our bottom and right exits, since we know what the top and left have to be based on the previously generated rooms
+				
+				if i == (MAP_HEIGHT-1)/2 {
+					if j == ((MAP_WIDTH-1)/2) - 1 {
+					 //connect to left exit of center room (we don't need to do the right exit because we check for that anyway)
+					}
+					else if j == ((MAP_WIDTH-1)/2) {
+						//code to load in this room
+						continue; //SKIP GENERATING THIS ROOM so we can use a starting room that is not random
+					}
+				}
+				if j == (MAP_WIDTH-1)/2 {
+					if i == ((MAP_HEIGHT-1)/2) - 1 {
+					 //connect to top exit of center room (we don't need to do the bottom because we check for that later anyway.)
+					}
+				}
+				//above section ensures we can insert a room in the middle and leave it connected
+				
+				if i>0 && new_map.map_coords[i-1][j].exits[BOTTOM] { //is the above room connected to this one
+					rand_exits[TOP] = true;
+				}
+				else {
+					rand_exits[TOP] = false;			
+				}
+				if j>0 && new_map.map_coords[i][j-1].exits[RIGHT] { //is the left room connected to this one
+					rand_exits[LEFT] = true;
+				}
+				else {
+					rand_exits[LEFT] = false;
+				}
+				if i == MAP_HEIGHT-1 {
+					rand_exits[BOTTOM] = false;
+				}
+				if j == MAP_WIDTH-1 {
+					rand_exits[RIGHT] = false;
+				}
+				info!("{}", i);
+				info!("{}", j);
+				new_map.map_coords[i][j] = generate_room(rand_exits);
+			}
+			
+		}
+		new_map.x_coords = 13;
+		new_map.y_coords = 12;
+		commands.spawn().insert(new_map);
 }
 
 fn read_map(
