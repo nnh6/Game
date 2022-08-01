@@ -27,7 +27,8 @@ use crate::{
 		Enemy,
 		EnemySheet
 	},
-	level::BombItem
+	level::BombItem,
+	boss::Boss,
 };
 
 #[derive(Component)]
@@ -123,7 +124,9 @@ impl Plugin for PlayerPlugin {
 					.with_system(check_player_bomb_pickup_collision)
 					.with_system(animate_bomb)
 					.with_system(bomb_throw)
+					.with_system(enter_new_room)
 					.with_system(damage_walls)
+
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -339,6 +342,7 @@ pub fn check_enemy_collision(
 	mut commands: Commands,
 	_enemy_sheet: Res<EnemySheet>,
 	enemy_query: Query<&Transform, (With<Enemy>, Without<Player>)>,
+	boss_query: Query<&Transform, (With<Boss>, Without<Player>)>,
 	mut player_query: Query<
 		(
 			Entity, 
@@ -358,6 +362,27 @@ pub fn check_enemy_collision(
 
 	for enemy_transform in enemy_query.iter() {
 		if collide(player_transform.translation, Vec2::splat(50.), enemy_transform.translation, Vec2::splat(50.)).is_some() && inv_timer.finished() {
+  				inv_timer.reset(); //reset the invincibility
+  				player_health.health -= 20.;
+  				//call update health here for more efficiency 
+  			
+  				//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+  				//let hs_len : usize = texture_atlas.textures.len() as usize;
+  				//let c_health : usize = (player_health.health/10.).round() as usize;
+  				//sprite.index = hs_len - c_health; //Use health to determine the index of the health sprite to show
+  	
+  				info!("{}", player_health.health);
+  				if player_health.health <= 0. {
+  					//player dies
+  					commands.insert_resource(NextState(GameState::GameOver));
+  					commands.entity(player_entity).despawn();
+  				}
+  			}
+	}
+	inv_timer.tick(Duration::from_secs_f32(FRAME_TIME)); //tick the invincibility timer after we're done checking collision
+
+	for boss_transform in boss_query.iter() {
+		if collide(player_transform.translation, Vec2::splat(50.), boss_transform.translation, Vec2::new(260.,100.)).is_some() && inv_timer.finished() {
   				inv_timer.reset(); //reset the invincibility
   				player_health.health -= 20.;
   				//call update health here for more efficiency 
@@ -524,7 +549,7 @@ fn update_health(
 
 fn update_health(
 	//texture_atlases: Res<Assets<TextureAtlas>>,
-	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>,Without<Brick>)>,
+	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>,Without<Boss>,Without<Brick>)>,
 	mut player: Query<&Health, With<Player>>
 ){//not completed
 	
@@ -720,7 +745,7 @@ fn animate_bomb( //not complete yet
 	}
 } 
 
-pub fn check_player_bomb_pickup_collision(
+fn check_player_bomb_pickup_collision(
 	mut commands: Commands,
 	mut player_query: Query<
 		(
@@ -743,13 +768,31 @@ pub fn check_player_bomb_pickup_collision(
 	
 
 	for (bomb_entity, bomb_transform)  in bomb_query.iter(){
-		info!("bp check"); 
+		//info!("bp check"); 
 		let (player_transform, mut player) = player_query.single_mut();
 		if collide(player_transform.translation, Vec2::splat(50.), bomb_transform.translation, Vec2::splat(50.)).is_some() {
-				info!("bomb picked up");
+				//info!("bomb picked up");
 				player.bombs = 3.0;
 				commands.entity(bomb_entity).despawn();
 		}
 	}
+}//bomb collision if touch a neutral bomb, collect it
+
+fn enter_new_room(
+	player: Query<&Transform,With<Player>>,
+){
+	for player_transform in player.iter() {
+		if player_transform.translation.y >= WIN_H/2.0-TILE_SIZE/2.0 {
+			info!("newroom up");
+		}
+		else if player_transform.translation.x <= -WIN_W/2.0+TILE_SIZE/2.0{
+			info!("newroom left");
+		}
+		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 {
+			info!("newroom right");
+		}
+		else if player_transform.translation.y < -WIN_H/2.0+TILE_SIZE/2.0 {
+			info!("newroom down");
+		}
+	}
 }
-//bomb collision if touch a neutral bomb, collect it
