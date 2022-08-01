@@ -78,44 +78,9 @@ fn boss_movement_system(
 			
 			let (x_org, y_org) = (transform.translation.x, transform.translation.y);
 			let (px_org,py_org) = (player_transform.translation.x, player_transform.translation.y);
-			let path: Vec3 = Vec3::new(x_org- px_org,y_org-px_org,900.0);
+			let path: Vec3 = Vec3::new(x_org- px_org,y_org-py_org,900.0);
 			
-			if check_tile_collision(path, &collision) && boss.last_move < (now + FRAME_TIME){ //if player in LOS run towards player
-				boss.last_move = now;
-				let deltax = {
-					if path.x>0.0 {
-						-10.0 * FRAME_TIME
-					}else{
-						10.0 * FRAME_TIME
-					}
-				};
-				
-				let target = transform.translation + Vec3::new(deltax, 0., 0.);
-				if check_tile_collision(target, &collision){
-					transform.translation = target;
-					boss.x_velocity = deltax;
-				}else{
-					boss.y_accel = 1000.0;
-				}
-			
-				
-				boss.y_velocity += -25.0 * TILE_SIZE * FRAME_TIME;
-
-				let deltay = boss.y_velocity * FRAME_TIME;
-				let target = transform.translation + Vec3::new(0., deltay, 0.);
-				if check_tile_collision(target, &collision){
-					transform.translation = target;
-					
-				}else{
-					boss.y_velocity = 0.0;
-				}
-				if path.y < transform.translation.y || boss.path == Vec3::new(0.,0.,0.){
-					boss.path = path;
-				}
-				
-			}
-			else if boss.last_move < (now + FRAME_TIME) { //
-				
+			if  boss.last_move < (now + FRAME_TIME){ //if player in LOS run towards player
 				boss.last_move = now;
 				let deltax = {
 					if boss.path.x>0.0 {
@@ -129,11 +94,9 @@ fn boss_movement_system(
 				if check_tile_collision(target, &collision){
 					transform.translation = target;
 					boss.x_velocity = deltax;
-				}else{
-					boss.y_accel = 1000.0;
 				}
+			
 				
-				boss.y_velocity = boss.y_accel* FRAME_TIME;
 				boss.y_velocity += -25.0 * TILE_SIZE * FRAME_TIME;
 
 				let deltay = boss.y_velocity * FRAME_TIME;
@@ -144,6 +107,10 @@ fn boss_movement_system(
 				}else{
 					boss.y_velocity = 0.0;
 				}
+				if (path.y > transform.translation.y || boss.path == Vec3::new(0.,0.,0.)) && check_tile_collision(path, &collision){
+					boss.path = path;
+				}
+				
 			}
 		}
 	}
