@@ -859,6 +859,14 @@ fn enter_new_room(
 	for mut player_transform in player.iter_mut() {
 		if player_transform.translation.y >= WIN_H/2.0-TILE_SIZE/2.0 + 25. {
 			player_transform.translation.y = -WIN_H/2.0+TILE_SIZE/2.0;
+			if player_transform.translation.x <=  -WIN_W/2.0+(1.5 *TILE_SIZE) //left corner
+			{
+				player_transform.translation.x = -WIN_W/2.0+(1.5 *TILE_SIZE); //avoid ooB
+			}
+			if player_transform.translation.x >=  WIN_W/2.0-(1.5 *TILE_SIZE) //right corner
+			{
+				player_transform.translation.x = WIN_W/2.0-(1.5 *TILE_SIZE); //avoid ooB
+			}
 			map.player_spawn = *player_transform;
 			map.y_coords -= 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
@@ -866,6 +874,14 @@ fn enter_new_room(
 		}
 		else if player_transform.translation.x <= -WIN_W/2.0+TILE_SIZE/2.0 -25.{
 			player_transform.translation.x = WIN_W/2.0-TILE_SIZE/2.0;
+			if player_transform.translation.y <=  -WIN_H/2.0+(1.5 *TILE_SIZE) //bottom corner
+			{
+				player_transform.translation.y = -WIN_H/2.0+(1.5 *TILE_SIZE); //avoid ooB
+			}
+			if player_transform.translation.y >=  WIN_H/2.0-(1.5 *TILE_SIZE) //top corner
+			{
+				player_transform.translation.y = WIN_H/2.0-(1.5 *TILE_SIZE); //avoid ooB
+			}
 			map.player_spawn = *player_transform;
 			map.x_coords -= 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
@@ -873,6 +889,14 @@ fn enter_new_room(
 		}
 		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 +25. {
 			player_transform.translation.x = -WIN_W/2.0+TILE_SIZE/2.0;
+			if player_transform.translation.y <=  -WIN_H/2.0+(1.5 *TILE_SIZE) //bottom corner
+			{
+				player_transform.translation.y = -WIN_H/2.0+(1.5 *TILE_SIZE); //avoid ooB
+			}
+			if player_transform.translation.y >=  WIN_H/2.0-(1.5 *TILE_SIZE) //top corner
+			{
+				player_transform.translation.y = WIN_H/2.0-(1.5 *TILE_SIZE); //avoid ooB
+			}
 			map.player_spawn = *player_transform;
 			map.x_coords += 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
@@ -880,6 +904,14 @@ fn enter_new_room(
 		}
 		else if player_transform.translation.y <= -WIN_H/2.0+TILE_SIZE/2.0 -25. {
 			player_transform.translation.y = WIN_H/2.0-TILE_SIZE/2.0;
+			if player_transform.translation.x <=  -WIN_W/2.0+(1.5 *TILE_SIZE) //left corner
+			{
+				player_transform.translation.x = -WIN_W/2.0+(1.5 *TILE_SIZE); //avoid ooB
+			}
+			if player_transform.translation.x >=  WIN_W/2.0-(1.5 *TILE_SIZE) //right corner
+			{
+				player_transform.translation.x = WIN_W/2.0-(1.5 *TILE_SIZE); //avoid ooB
+			}
 			map.player_spawn = *player_transform;
 			map.y_coords += 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
