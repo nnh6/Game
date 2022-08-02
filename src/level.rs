@@ -1,10 +1,10 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader},
-	fmt, env::current_exe,
+	fmt,
 }; //might have to ask to use these
 
-use std::error::Error;
+
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use rand::prelude::*;
@@ -68,7 +68,7 @@ impl Room
 		Self {
 			seed_wall_locations: gen_seed_wall_locations(),
 			room_coords: [['-'; ROOM_WIDTH]; ROOM_HEIGHT],
-			exits: exits,
+			exits,
 		}
 	}
 }
@@ -406,12 +406,10 @@ fn generate_map(
 						continue; //SKIP GENERATING THIS ROOM so we can use a starting room that is not random
 					}
 				}
-				if j == (MAP_WIDTH-1)/2 {
-					if i == ((MAP_HEIGHT-1)/2) - 1 {
-					rand_exits[BOTTOM] = true;
-					//connect to top exit of center room (we don't need to do the bottom because we check for that later anyway.)
-					}
-				}
+				if j == (MAP_WIDTH-1)/2 && i == ((MAP_HEIGHT-1)/2) - 1 {
+    					rand_exits[BOTTOM] = true;
+    					//connect to top exit of center room (we don't need to do the bottom because we check for that later anyway.)
+    					}
 				//above section ensures we can insert a room in the middle and leave it connected
 				
 				if i>0 && new_map.map_coords[i-1][j].exits[BOTTOM] { //is the above room connected to this one
@@ -455,7 +453,7 @@ fn starting_room() -> Room {
 			}
 		}
 	}
-	return new_room;
+	new_room
 }
 
 
@@ -475,7 +473,7 @@ fn read_map( //No longer used
 	let mut z1 = 0;
 	let mut z2 = 0; //Current Map location is [z1],[z2]
 	let mut current_room = map.map_coords[z1][z2];
-	let t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
+	let _t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
 	for(x, line) in BufReader::new(file).lines().enumerate() { //read each line from file
 		if let Ok(line) = line {
 			for (y, char) in line.chars().enumerate() { //read each char from line
@@ -525,7 +523,7 @@ fn generate_room(exits: [bool;4]) -> Room {
 	let mut new_room = Room::new(exits);
 	let mut cell_count = 0;
 	let mut rng = thread_rng();
-	let door_here = rng.gen_range(0..100) == 50;
+	let _door_here = rng.gen_range(0..100) == 50;
 
 	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
 		for (j, character) in row.iter_mut().enumerate() {
@@ -589,7 +587,7 @@ fn generate_room(exits: [bool;4]) -> Room {
 			}
 		}
 	}
-	return new_room;
+	new_room
 }
 
 fn gen_seed_wall_locations() -> [usize;N] {
@@ -599,11 +597,11 @@ fn gen_seed_wall_locations() -> [usize;N] {
 		*num = rng.gen_range(0..ROOM_WIDTH*ROOM_HEIGHT);
 	} 
 	//info!("{:?}", arr);
-	return arr;
+	arr
 }
 
 fn despawn_all(
-	mut entity: Query<Entity,(Without<Map>)>,
+	mut entity: Query<Entity,Without<Map>>,
 	mut commands: Commands
 ){
 	for e in entity.iter_mut() {
