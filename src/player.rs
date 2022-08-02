@@ -857,31 +857,31 @@ fn enter_new_room(
 	//enter loading state
 	let mut map = mapq.single_mut();
 	for mut player_transform in player.iter_mut() {
-		if player_transform.translation.y >= WIN_H/2.0-TILE_SIZE/2.0 {
-			player_transform.translation.y = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
+		if player_transform.translation.y >= WIN_H/2.0-TILE_SIZE/2.0 + 25. {
+			player_transform.translation.y = -WIN_H/2.0+TILE_SIZE/2.0;
 			map.player_spawn = *player_transform;
-			map.y_coords += 1 as usize;
+			map.y_coords -= 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom up");
 		}
-		else if player_transform.translation.x <= -WIN_W/2.0+TILE_SIZE/2.0{
-			player_transform.translation.x = WIN_W/2.0+TILE_SIZE/2.0-TILE_SIZE;
+		else if player_transform.translation.x <= -WIN_W/2.0+TILE_SIZE/2.0 -25.{
+			player_transform.translation.x = WIN_W/2.0-TILE_SIZE/2.0;
 			map.player_spawn = *player_transform;
 			map.x_coords -= 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom left");
 		}
-		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 {
-			player_transform.translation.x = -WIN_W/2.0+TILE_SIZE/2.0+TILE_SIZE;
+		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 +25. {
+			player_transform.translation.x = -WIN_W/2.0+TILE_SIZE/2.0;
 			map.player_spawn = *player_transform;
 			map.x_coords += 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom right");
 		}
-		else if player_transform.translation.y <= -WIN_H/2.0+TILE_SIZE/2.0 {
-			player_transform.translation.y = WIN_H/2.0-TILE_SIZE/2.0-TILE_SIZE;
+		else if player_transform.translation.y <= -WIN_H/2.0+TILE_SIZE/2.0 -25. {
+			player_transform.translation.y = WIN_H/2.0-TILE_SIZE/2.0;
 			map.player_spawn = *player_transform;
-			map.y_coords -= 1 as usize;
+			map.y_coords += 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom down");
 		}
