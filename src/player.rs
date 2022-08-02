@@ -815,17 +815,33 @@ fn check_player_bomb_pickup_collision(
 		(With<BombItem>,
 		Without<Player>)
 		>,
+	//tester
+	//kb: Res<Input<KeyCode>>,
+	//query: Query<&Transform, With<Player>>,
 ) {
-	
+	//test 
+	/*
+	if let Ok(player_tf) = query.get_single(){
+		if kb.just_pressed(KeyCode::R){
+			let (player_transform, mut player, mut inventory) = player_query.single_mut();
+			if player.bombs < 97. {
+				player.bombs += 3.0;
+				inventory.b_count += 3.0;
+		}}}
+	*/
 
 	for (bomb_entity, bomb_transform)  in bomb_query.iter(){
 		//info!("bp check"); 
 		let (player_transform, mut player, mut inventory) = player_query.single_mut();
 		if collide(player_transform.translation, Vec2::splat(50.), bomb_transform.translation, Vec2::splat(50.)).is_some() {
-				info!("bomb picked up");
+				if player.bombs < 97. {
+				info!("3 bombs picked up");
 				player.bombs += 3.0;
 				inventory.b_count += 3.0;
 				commands.entity(bomb_entity).despawn();
+				} else {
+					info!("Not enough inventory space to pick up 3 bombs.");
+				}
 		}
 	}
 }//bomb collision if touch a neutral bomb, collect it
@@ -1180,8 +1196,11 @@ fn update_count(
 	//info!("sprite.index = {}", sprite.index);
 	let inventory = inventory.single_mut();
 	//info!("inventory: {}", inventory.b_count);
-
-	sprite.index = inventory.b_count as usize;
+	if inventory.b_count >= 99. {
+		sprite.index = 99. as usize;
+	} else {
+		sprite.index = inventory.b_count as usize;
+	}
 
 	//let player_query = player_query.single_mut();
 	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();

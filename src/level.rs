@@ -606,7 +606,7 @@ fn despawn_all(
 	commands.insert_resource(NextState(GameState::Playing));
 }
 
-
+/*
 fn generate_map(
 	mut commands: Commands,
 	//mut rooms_query: Query<(&mut GennedRooms)>,
@@ -676,4 +676,4 @@ fn generate_map(
 		new_map.x_coords = 13;
 		new_map.y_coords = 12;
 		commands.spawn().insert(new_map);
-}
+}*/
