@@ -976,19 +976,23 @@ fn load_fragment_sheet(
 
 fn spawn_fragment(
 	mut commands: Commands,
-	_input: Res<Input<KeyCode>>,
+	input: Res<Input<KeyCode>>,
+	texture_atlases: Res<Assets<TextureAtlas>>,
 	fragment_sheet: Res<FragmentSheet>,
-	query: Query<(Entity, &Transform), (With<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>,Without<Fragment>)>,
+	query: Query<(Entity, &Transform, &mut TextureAtlasSprite, &Handle<TextureAtlas>,), (With<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>,Without<Fragment>)>,
 ){	
 	//if input.pressed(KeyCode::F){
-		for (_bomb_entity, bomb_tf) in query.iter() {
-		
-	//	for i in 0..8{
+
+		for (bomb_entity, bomb_tf, mut sprite, handle) in query.iter() {
+			let texture_atlas = texture_atlases.get(handle).unwrap();
+			//info!("{}", sprite.index);
+			if sprite.index == 6 {  
+				for i in 0..8{
+
 			//if input.just_pressed(KeyCode::F){
 			
 			
 				//info!("found bomb");
-			
 
 				let (x,y) = (bomb_tf.translation.x, bomb_tf.translation.y);
 
@@ -1000,7 +1004,7 @@ fn spawn_fragment(
 							..default()
 						},
 						//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
-						transform: Transform::from_xyz(x, y, -1.),
+						transform: Transform::from_xyz(x, y, 900.),
 						..default()
 					})
 					.insert(AnimationTimer(Timer::from_seconds(1., true)))
@@ -1009,10 +1013,11 @@ fn spawn_fragment(
 						
 						y_velocity: 0., //-1.0,
 						x_velocity: 0.,
-						index: 0,
+						index: i,
 					});
 					//info!("{}", i);
-			//}
+				}
+			}
 		}
 	//}
 }
@@ -1020,20 +1025,22 @@ fn spawn_fragment(
 fn fragment_movement(
 	mut commands: Commands,
 	time: Res<Time>,
-	_input: Res<Input<KeyCode>>,
-	collision: Query<&Transform, (With<Collider>, Without<Fragment>, Without<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>,
+	input: Res<Input<KeyCode>>,
+	collision: Query<&Transform, (With<Collider>, Without<Fragment>)>,
 	mut fragment: Query<(Entity, &mut Fragment, &mut Transform, &mut AnimationTimer), (With<Fragment>, Without<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>,){
 
-	let mut anim_complete = false;
+	//let mut anim_complete = false;
+
 	for (entity, mut fragment, mut transform, mut timer) in fragment.iter_mut() {
-		timer.tick(time.delta());
-		if timer.just_finished() || anim_complete{
-			anim_complete = true;
+		//timer.tick(time.delta());
+		//if timer.just_finished() || anim_complete{
+			//anim_complete = true;
 			let (x,y) = (transform.translation.x, transform.translation.y);
 			transform.translation = Vec3::new(x, y, 900.);
 			let mut deltax = 0.0;
 			let mut deltay = 0.0;
-			
+			//fragment.y_velocity += -10.0 * TILE_SIZE * FRAME_TIME;
+			//deltay += fragment.y_velocity;
 			if fragment.index == 0{
 				deltax = -0.5;
 				deltay = 0.5;
@@ -1069,15 +1076,17 @@ fn fragment_movement(
 			if fragment.index == 7{
 				deltax = -0.5;		
 			}
-
-			deltax = deltax * TILE_SIZE * FRAME_TIME * 100.;
-			deltay = deltay  * TILE_SIZE * FRAME_TIME * 100.;
+			
+			
+			deltax = deltax * TILE_SIZE * FRAME_TIME * 10.;
+			deltay = deltay  * TILE_SIZE * FRAME_TIME * 10.;
 
 			fragment.x_velocity = deltax;
 			let target = transform.translation + Vec3::new(deltax, 0., 0.);
 			if check_tile_collision_frag(target, &collision){
 				transform.translation = target;
 			}else{
+				info!("collided");
 				commands.entity(entity).despawn();
 			}
 			fragment.y_velocity = deltay;
@@ -1085,22 +1094,23 @@ fn fragment_movement(
 			if check_tile_collision_frag(target, &collision){
 				transform.translation = target;
 			}else{
+				info!("collided");
 				commands.entity(entity).despawn();
 			}
 
-		}
+		//}
 		//commands.entity(entity).despawn();
 	}
 }
 
 fn check_tile_collision_frag(
 	pos: Vec3,
-	wall_collide: &Query<&Transform, (With<Collider>, Without<Fragment>, Without<Bomb>, Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>
+	wall_collide: &Query<&Transform, (With<Collider>, Without<Fragment>)>
 ) -> bool{
 	for wall in wall_collide.iter(){
 		let collision = collide(
 			pos,
-			Vec2::splat(TILE_SIZE * 0.9),
+			Vec2::splat(TILE_SIZE * 0.1),
 			wall.translation,
 			Vec2::splat(TILE_SIZE)
 		);
