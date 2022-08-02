@@ -23,11 +23,13 @@ use crate::{
 	level::Door,
 	level::Collider,
 	level::Brick,
+	level::Map,
 	enemy::{
 		Enemy,
 		EnemySheet
 	},
 	level::BombItem,
+	level::HealthItem,
 	boss::Boss,
 };
 
@@ -131,6 +133,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(check_enemy_collision)
 					//BOMB
 					.with_system(check_player_bomb_pickup_collision)
+					.with_system(check_player_health_pickup_collision)
 					.with_system(animate_bomb)
 					.with_system(bomb_throw)
 					.with_system(enter_new_room)
@@ -201,7 +204,9 @@ fn load_player_sheet(
 fn spawn_player(
 	mut commands: Commands,
 	player_sheet: Res<PlayerSheet>,
+	mapq: Query<&Map>
 ){
+	let map = mapq.single();
 	commands
 		.spawn_bundle(SpriteSheetBundle {
 			texture_atlas: player_sheet.clone(),
@@ -209,7 +214,7 @@ fn spawn_player(
 				index: 0,
 				..default()
 			},
-			transform: Transform::from_xyz(-400., -(WIN_H/2.) + (TILE_SIZE * 2.5), 900.),
+			transform: map.player_spawn,
 			..default()
 		})
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
@@ -802,23 +807,82 @@ fn check_player_bomb_pickup_collision(
 }//bomb collision if touch a neutral bomb, collect it
 
 fn enter_new_room(
-	player: Query<&Transform,With<Player>>,
+	mut player: Query<&mut Transform,With<Player>>,
+	mut mapq: Query<&mut Map>,
+	mut commands: Commands,
 ){
-	for player_transform in player.iter() {
+	//move player
+	//update map coords
+	//despawn?
+	//enter loading state
+	let mut map = mapq.single_mut();
+	for mut player_transform in player.iter_mut() {
 		if player_transform.translation.y >= WIN_H/2.0-TILE_SIZE/2.0 {
+			player_transform.translation.y = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			map.player_spawn = *player_transform;
+			map.y_coords += 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom up");
 		}
 		else if player_transform.translation.x <= -WIN_W/2.0+TILE_SIZE/2.0{
+			player_transform.translation.x = WIN_W/2.0+TILE_SIZE/2.0-TILE_SIZE;
+			map.player_spawn = *player_transform;
+			map.x_coords -= 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom left");
 		}
 		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 {
+			player_transform.translation.x = -WIN_W/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			map.player_spawn = *player_transform;
+			map.x_coords += 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom right");
 		}
-		else if player_transform.translation.y < -WIN_H/2.0+TILE_SIZE/2.0 {
+		else if player_transform.translation.y <= -WIN_H/2.0+TILE_SIZE/2.0 {
+			player_transform.translation.y = WIN_H/2.0-TILE_SIZE/2.0-TILE_SIZE;
+			map.player_spawn = *player_transform;
+			map.y_coords -= 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom down");
 		}
 	}
 }
+
+
+fn check_player_health_pickup_collision(
+	mut commands: Commands,
+	mut player_query: Query<
+		(
+			&Transform, 
+			&mut Player,
+			&mut Health,
+		),
+			(
+				With<Player>, 
+				Without<BombItem>
+			)>,
+	mut hp_query: Query<
+		(
+			Entity, 
+			&Transform,
+		),
+		(With<HealthItem>,
+		Without<Player>)
+		>,
+) {
+	
+
+	for (hp_entity, health_transform)  in hp_query.iter(){
+		//info!("bp check"); 
+		let (player_transform, mut player, mut health) = player_query.single_mut();
+		if collide(player_transform.translation, Vec2::splat(50.), health_transform.translation, Vec2::splat(50.)).is_some() {
+				//info!("bomb picked up");
+				health.health = 100.0;
+				commands.entity(hp_entity).despawn();
+		}
+	}
+}
+//todo find valid ground
 
 //bomb collision if touch a neutral bomb, collect it
 
@@ -1008,4 +1072,5 @@ fn check_tile_collision_frag(
 // 			player.y_velocity = 0.0;
 // 			player.grounded = true;
 // 		}
+
 

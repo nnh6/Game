@@ -1,9 +1,10 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader},
-	fmt,
+	fmt, env::current_exe,
 }; //might have to ask to use these
 
+use std::error::Error;
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use rand::prelude::*;
@@ -86,32 +87,39 @@ impl fmt::Display for Room {
 #[derive(Component,Clone)]
 pub struct Map
 {
-	map_coords: Vec<[Room;MAP_WIDTH]> , //array of rooms on the map
-	x_coords: usize,
-	y_coords: usize, //coordinates for location of the current room
+	map_coords: Vec<[Room;MAP_WIDTH]>, //array of rooms on the map
+	pub x_coords: usize,
+	pub y_coords: usize, //coordinates for location of the current room
+	pub player_spawn: Transform,
 }
 
 impl Map
 {
 	pub fn new() -> Self {
-		Self{map_coords: vec![[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
+		Self{map_coords: vec![[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0, player_spawn: Transform::from_xyz(-400., -(WIN_H/2.) + (TILE_SIZE * 1.5), 900.) }
 	}
 }
 #[derive(Component)]
 pub struct BombItem;
+
+#[derive(Component)]
+pub struct HealthItem;
 
 // Will need to access these with .0, not deriving Deref/DerefMut
 pub struct BackgroundImage(Handle<Image>);
 pub struct DoorImage(Handle<Image>);
 pub struct BrickSheet(Handle<TextureAtlas>);
 pub struct BombItemSheet(Handle<TextureAtlas>);
+pub struct HealthItemSheet(Handle<TextureAtlas>);
 
 pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
 	fn build (&self, app: &mut App) {
 		app.add_enter_system(GameState::Loading, load_level)
 			.add_enter_system(GameState::Loading, generate_map)
-			.add_enter_system(GameState::Playing, setup_level);
+			.add_enter_system(GameState::Playing, setup_level)
+			.add_enter_system(GameState::Traverse,despawn_all)
+			;
 	}
 }
 
@@ -162,6 +170,18 @@ fn load_level(
 	let bomb_atlas_handle = texture_atlases.add(bomb_atlas);
 
 	commands.insert_resource(BombItemSheet(bomb_atlas_handle));
+
+	//Health
+	let hp_handle = asset_server.load("Health_Item.png");
+	loading_assets.0.insert(
+		hp_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(hp_handle.clone_untyped(), &asset_server),
+	);
+
+	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::new(45.,35.), 1, 1);
+	let hp_atlas_handle = texture_atlases.add(hp_atlas);
+
+	commands.insert_resource(HealthItemSheet(hp_atlas_handle));
 }
 
 fn setup_level(
@@ -174,6 +194,7 @@ fn setup_level(
 	enemy_sheet: Res<EnemySheet>,
 	boss_sheet: Res<BossSheet>,
 	bomb_sheet: Res<BombItemSheet>,
+	hp_sheet: Res<HealthItemSheet>
 ) {
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -191,7 +212,18 @@ fn setup_level(
 	let brick_atlas = texture_atlases.get(&brick_sheet.0);
 	let brick_len = brick_atlas.unwrap().len();
 	let map = map_query.single_mut();
+	
+	//generate and store new room if OOB
+	/* 
+	let (x,y) = (map.x_coords,map.y_coords);
+
+	if map.map_coords.len() >= x && map.map_coords[x].len() >= y{
+		map.map_coords[x][y] = generate_room(map.cur_exits);
+	}
+	*/
 	let current_room = map.map_coords[map.x_coords][map.y_coords];
+	
+	
 	let mut i = 0;
 	let t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
 	for(y, line) in current_room.room_coords.iter().enumerate() { //read each line from map
@@ -302,6 +334,27 @@ fn setup_level(
 					//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 					//.insert(Velocity::new())
 					.insert(BombItem);
+					//ENEMY CODE
+					i += 1;
+				}
+				'H'=> {
+					commands
+					.spawn_bundle(SpriteSheetBundle {
+						texture_atlas: hp_sheet.0.clone(),
+						sprite: TextureAtlasSprite {
+							index: 0,
+							..default()
+						},
+						//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
+						transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)-23.0, 900.0),
+								..default()
+							},
+						..default()
+					})
+					//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+					//.insert(Velocity::new())
+					.insert(HealthItem);
 					//ENEMY CODE
 					i += 1;
 				}
@@ -538,4 +591,88 @@ fn gen_seed_wall_locations() -> [usize;N] {
 	} 
 	info!("{:?}", arr);
 	return arr;
+}
+
+fn despawn_all(
+	mut entity: Query<Entity,(Without<Map>)>,
+	mut commands: Commands
+){
+	for e in entity.iter_mut() {
+        commands.entity(e).despawn();
+    }
+	let camera = OrthographicCameraBundle::new_2d();
+	commands.spawn_bundle(camera);
+
+	commands.insert_resource(NextState(GameState::Playing));
+}
+
+fn generate_map(
+	mut commands: Commands,
+	//mut rooms_query: Query<(&mut GennedRooms)>,
+	) {
+		let mut new_map = Map::new(); 
+		let mut rand_exits : [bool;4] = [true;4];
+		let mut rng = rand::thread_rng();
+		for i in 0..MAP_HEIGHT /*in new_map.map_coords.iter_mut().enumerate()*/ {
+			for j in 0..MAP_WIDTH/* in row.iter_mut().enumerate()*/ {
+
+
+				if rng.gen_range(0..=1) == 0 {
+					rand_exits[BOTTOM] = false;
+				}
+				else {
+					rand_exits[BOTTOM] = true;
+				}
+				if rng.gen_range(0..=1) == 0 {
+					rand_exits[RIGHT] = false; 
+				}
+				else {
+					rand_exits[RIGHT] = true;
+				} //random assignments need to be at the top of the function in case we need to reassign them
+
+				// we only randomly generate our bottom and right exits, since we know what the top and left have to be based on the previously generated rooms
+
+				if i == (MAP_HEIGHT-1)/2 {
+					if j == ((MAP_WIDTH-1)/2) - 1 {
+					 //connect to left exit of center room (we don't need to do the right exit because we check for that anyway)
+					}
+					else if j == ((MAP_WIDTH-1)/2) {
+						//code to load in this room
+						continue; //SKIP GENERATING THIS ROOM so we can use a starting room that is not random
+					}
+				}
+				if j == (MAP_WIDTH-1)/2 {
+					if i == ((MAP_HEIGHT-1)/2) - 1 {
+					 //connect to top exit of center room (we don't need to do the bottom because we check for that later anyway.)
+					}
+				}
+				//above section ensures we can insert a room in the middle and leave it connected
+
+				if i>0 && new_map.map_coords[i-1][j].exits[BOTTOM] { //is the above room connected to this one
+					rand_exits[TOP] = true;
+				}
+				else {
+					rand_exits[TOP] = false;			
+				}
+				if j>0 && new_map.map_coords[i][j-1].exits[RIGHT] { //is the left room connected to this one
+					rand_exits[LEFT] = true;
+				}
+				else {
+					rand_exits[LEFT] = false;
+				}
+				if i == MAP_HEIGHT-1 {
+					rand_exits[BOTTOM] = false;
+				}
+				if j == MAP_WIDTH-1 {
+					rand_exits[RIGHT] = false;
+				}
+				//info!("{}", i);
+				//info!("{}", j);
+				new_map.map_coords[i][j] = generate_room(rand_exits);
+			}
+
+		}
+		new_map.x_coords = 13;
+		new_map.y_coords = 12;
+		commands.spawn().insert(new_map);
 }
