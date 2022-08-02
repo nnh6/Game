@@ -243,6 +243,7 @@ fn spawn_player(
 		.insert(Velocity::new())
 		.insert(InvincibilityTimer(Timer::from_seconds(INV_TIME, false)))
 		.insert(Health::new())
+		.insert(InventoryCount::new())
 		.insert(Player{
 			grounded: false,
 			y_velocity: -1.0,
@@ -633,12 +634,12 @@ fn bomb_throw(
 	//game_textures: Res<GameTextures>,
 	query: Query<&Transform, With<Player>>,
 	bomb_sheet: Res<BombSheet>,
-	mut player: Query<&mut Player, With<Player>>,
+	mut player: Query<(&mut Player, &mut InventoryCount), With<Player>>,
 ){
 	if let Ok(player_tf) = query.get_single(){
 		if kb.just_pressed(KeyCode::F){
 			let (x,y) = (player_tf.translation.x, player_tf.translation.y);
-			let mut player = player.single_mut();
+			let (mut player, mut inventory) = player.single_mut();
 			//info!("Bomb dropped");
 	if player.bombs > 0. {
 	commands
@@ -660,6 +661,7 @@ fn bomb_throw(
 			x_velocity: 0.,
 		});
 		player.bombs = player.bombs - 1.;
+		inventory.b_count = inventory.b_count - 1.;
 		info!("bombs left: {}", player.bombs);
 	}
 		}
@@ -798,7 +800,8 @@ fn check_player_bomb_pickup_collision(
 	mut player_query: Query<
 		(
 			&Transform, 
-			&mut Player
+			&mut Player,
+			&mut InventoryCount,
 		),
 			(
 				With<Player>, 
@@ -817,11 +820,11 @@ fn check_player_bomb_pickup_collision(
 
 	for (bomb_entity, bomb_transform)  in bomb_query.iter(){
 		//info!("bp check"); 
-		let (player_transform, mut player) = player_query.single_mut();
+		let (player_transform, mut player, mut inventory) = player_query.single_mut();
 		if collide(player_transform.translation, Vec2::splat(50.), bomb_transform.translation, Vec2::splat(50.)).is_some() {
 				info!("bomb picked up");
 				player.bombs += 3.0;
-
+				inventory.b_count += 3.0;
 				commands.entity(bomb_entity).despawn();
 		}
 	}
@@ -1158,7 +1161,7 @@ fn spawn_count(
 		.spawn_bundle(SpriteSheetBundle {
 			texture_atlas: c_sheet.clone(),
 			sprite: TextureAtlasSprite {
-				index: 0,
+				index: 3,
 				..default()
 			},
 			transform: Transform::from_xyz((WIN_W/2.) - (TILE_SIZE * 0.6) , (WIN_H/2.) - (TILE_SIZE * 0.35), 999.),
@@ -1170,12 +1173,20 @@ fn spawn_count(
 fn update_count(
 	//texture_atlases: Res<Assets<TextureAtlas>>,
 	mut count: Query<&mut TextureAtlasSprite, (With<InventoryCount>, Without<Health>,Without<Player>,Without<Enemy>,Without<Boss>,Without<Brick>)>,
-	mut player: Query<&InventoryCount, With<Player>>
+	mut inventory: Query<&InventoryCount, With<Player>>,
+	//mut player_query: Query<(&Player,),(With<Player>,)>,
 ){//not completed
-	//let mut sprite = count.single_mut();
-	//let player = player.single_mut();
+	let mut sprite = count.single_mut();
+	//info!("sprite.index = {}", sprite.index);
+	let inventory = inventory.single_mut();
+	//info!("inventory: {}", inventory.b_count);
+
+	sprite.index = inventory.b_count as usize;
+
+	//let player_query = player_query.single_mut();
 	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
 	//let hs_len : usize = texture_atlas.textures.len() as usize;
 	//sprite.index = (player.b_count).round() as usize;
 	//Use health to determine the index of the health sprite to show
-}
+	//if inventory.b_count != player_query. {
+} 
