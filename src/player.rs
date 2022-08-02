@@ -83,6 +83,23 @@ impl Health {
 #[derive(Deref, DerefMut)]
 pub struct HealthAtlas(Handle<TextureAtlas>);
 
+#[derive(Deref, DerefMut)]
+pub struct InventoryAtlas(Handle<TextureAtlas>);
+
+#[derive(Deref, DerefMut)]
+pub struct CountAtlas(Handle<TextureAtlas>);
+
+#[derive(Component)]
+pub struct InventoryCount{
+	b_count: f32,
+}
+
+impl InventoryCount {
+	pub fn new() -> Self {
+		Self {b_count: 3.}
+	}
+}
+
 #[derive(Component, Deref, DerefMut)]
 pub struct Velocity {
 	velocity: Vec2,
@@ -140,7 +157,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(damage_walls)
 					.with_system(spawn_fragment)
 					.with_system(fragment_movement)
-
+					.with_system(update_count)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -152,6 +169,10 @@ impl Plugin for PlayerPlugin {
 			.add_enter_system(GameState::Loading, load_bomb_sheet)
 			//.add_enter_system(GameState::Playing, spawn_bomb)
 			.add_enter_system(GameState::Loading, load_fragment_sheet)
+			.add_enter_system(GameState::Loading, load_inventory_sheet)
+			.add_enter_system(GameState::Playing, spawn_inventory)
+			.add_enter_system(GameState::Loading, load_count_sheet)
+			.add_enter_system(GameState::Playing, spawn_count)
 			/*.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
@@ -222,6 +243,7 @@ fn spawn_player(
 		.insert(Velocity::new())
 		.insert(InvincibilityTimer(Timer::from_seconds(INV_TIME, false)))
 		.insert(Health::new())
+		.insert(InventoryCount::new())
 		.insert(Player{
 			grounded: false,
 			y_velocity: -1.0,
@@ -612,12 +634,12 @@ fn bomb_throw(
 	//game_textures: Res<GameTextures>,
 	query: Query<&Transform, With<Player>>,
 	bomb_sheet: Res<BombSheet>,
-	mut player: Query<&mut Player, With<Player>>,
+	mut player: Query<(&mut Player, &mut InventoryCount), With<Player>>,
 ){
 	if let Ok(player_tf) = query.get_single(){
 		if kb.just_pressed(KeyCode::F){
 			let (x,y) = (player_tf.translation.x, player_tf.translation.y);
-			let mut player = player.single_mut();
+			let (mut player, mut inventory) = player.single_mut();
 			//info!("Bomb dropped");
 	if player.bombs > 0. {
 	commands
@@ -639,6 +661,7 @@ fn bomb_throw(
 			x_velocity: 0.,
 		});
 		player.bombs = player.bombs - 1.;
+		inventory.b_count = inventory.b_count - 1.;
 		info!("bombs left: {}", player.bombs);
 	}
 		}
@@ -777,7 +800,8 @@ fn check_player_bomb_pickup_collision(
 	mut player_query: Query<
 		(
 			&Transform, 
-			&mut Player
+			&mut Player,
+			&mut InventoryCount,
 		),
 			(
 				With<Player>, 
@@ -796,11 +820,11 @@ fn check_player_bomb_pickup_collision(
 
 	for (bomb_entity, bomb_transform)  in bomb_query.iter(){
 		//info!("bp check"); 
-		let (player_transform, mut player) = player_query.single_mut();
+		let (player_transform, mut player, mut inventory) = player_query.single_mut();
 		if collide(player_transform.translation, Vec2::splat(50.), bomb_transform.translation, Vec2::splat(50.)).is_some() {
 				info!("bomb picked up");
 				player.bombs += 3.0;
-
+				inventory.b_count += 3.0;
 				commands.entity(bomb_entity).despawn();
 		}
 	}
@@ -1073,4 +1097,96 @@ fn check_tile_collision_frag(
 // 			player.grounded = true;
 // 		}
 
+//BOMB INVENTORY
+fn load_inventory_sheet(
+	mut commands: Commands,
+	asset_server: Res<AssetServer>,
+	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+	mut loading_assets: ResMut<LoadingAssets>,
+){
+	let ib_handle = asset_server.load("inventory_bombs_small.png");
+	
+	loading_assets.insert(
+		ib_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(ib_handle.clone_untyped(), &asset_server),
+	);
 
+	let ib_atlas = TextureAtlas::from_grid(ib_handle, Vec2::new(150., 32.5), 1, 1);
+	let ib_atlas_handle = texture_atlases.add(ib_atlas);
+
+	commands.insert_resource(InventoryAtlas(ib_atlas_handle));
+}
+
+fn spawn_inventory(
+	mut commands: Commands,
+	inventory_sheet: Res<InventoryAtlas>,
+){
+	commands
+		.spawn_bundle(SpriteSheetBundle {
+			texture_atlas: inventory_sheet.clone(),
+			sprite: TextureAtlasSprite {
+				index: 0,
+				..default()
+			},
+			transform: Transform::from_xyz((WIN_W/2.) - (TILE_SIZE * 1.8) , (WIN_H/2.) - (TILE_SIZE * 0.3), 999.),
+			..default()
+		});
+		//.insert();
+}
+
+fn load_count_sheet(
+	mut commands: Commands,
+	asset_server: Res<AssetServer>,
+	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+	mut loading_assets: ResMut<LoadingAssets>,
+){
+	let c_handle = asset_server.load("count_99.png");
+	
+	loading_assets.insert(
+		c_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(c_handle.clone_untyped(), &asset_server),
+	);
+
+	let c_atlas = TextureAtlas::from_grid(c_handle, Vec2::new(80., 80.), 10, 10);
+	let c_atlas_handle = texture_atlases.add(c_atlas);
+
+	commands.insert_resource(CountAtlas(c_atlas_handle));
+}
+
+fn spawn_count(
+	mut commands: Commands,
+	c_sheet: Res<CountAtlas>, //healthsheet instead
+){
+	commands
+		.spawn_bundle(SpriteSheetBundle {
+			texture_atlas: c_sheet.clone(),
+			sprite: TextureAtlasSprite {
+				index: 3,
+				..default()
+			},
+			transform: Transform::from_xyz((WIN_W/2.) - (TILE_SIZE * 0.6) , (WIN_H/2.) - (TILE_SIZE * 0.35), 999.),
+			..default()
+		})
+		.insert(InventoryCount::new());
+}
+
+fn update_count(
+	//texture_atlases: Res<Assets<TextureAtlas>>,
+	mut count: Query<&mut TextureAtlasSprite, (With<InventoryCount>, Without<Health>,Without<Player>,Without<Enemy>,Without<Boss>,Without<Brick>)>,
+	mut inventory: Query<&InventoryCount, With<Player>>,
+	//mut player_query: Query<(&Player,),(With<Player>,)>,
+){//not completed
+	let mut sprite = count.single_mut();
+	//info!("sprite.index = {}", sprite.index);
+	let inventory = inventory.single_mut();
+	//info!("inventory: {}", inventory.b_count);
+
+	sprite.index = inventory.b_count as usize;
+
+	//let player_query = player_query.single_mut();
+	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+	//let hs_len : usize = texture_atlas.textures.len() as usize;
+	//sprite.index = (player.b_count).round() as usize;
+	//Use health to determine the index of the health sprite to show
+	//if inventory.b_count != player_query. {
+} 
