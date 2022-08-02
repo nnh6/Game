@@ -81,6 +81,25 @@ impl Health {
 #[derive(Deref, DerefMut)]
 pub struct HealthAtlas(Handle<TextureAtlas>);
 
+
+
+#[derive(Deref, DerefMut)]
+pub struct InventoryAtlas(Handle<TextureAtlas>);
+
+#[derive(Deref, DerefMut)]
+pub struct CountAtlas(Handle<TextureAtlas>);
+
+#[derive(Component)]
+pub struct InventoryCount{
+	b_count: f32,
+}
+
+impl InventoryCount {
+	pub fn new() -> Self {
+		Self {b_count: 3.}
+	}
+}
+
 #[derive(Component, Deref, DerefMut)]
 pub struct Velocity {
 	velocity: Vec2,
@@ -105,7 +124,6 @@ pub struct PlayerSheet(Handle<TextureAtlas>);
 
 #[derive(Deref, DerefMut)]
 pub struct FragmentSheet(Handle<TextureAtlas>);
-
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
@@ -137,7 +155,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(damage_walls)
 					.with_system(spawn_fragment)
 					.with_system(fragment_movement)
-
+					.with_system(update_count)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -149,6 +167,11 @@ impl Plugin for PlayerPlugin {
 			.add_enter_system(GameState::Loading, load_bomb_sheet)
 			//.add_enter_system(GameState::Playing, spawn_bomb)
 			.add_enter_system(GameState::Loading, load_fragment_sheet)
+			.add_enter_system(GameState::Loading, load_inventory_sheet)
+			.add_enter_system(GameState::Playing, spawn_inventory)
+			.add_enter_system(GameState::Loading, load_count_sheet)
+			.add_enter_system(GameState::Playing, spawn_count)
+
 			/*.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
@@ -528,41 +551,11 @@ fn spawn_health(
 
 }
 
-/* 
-fn update_health(
-	player: Query<(Entity, &Health, &Transform), With<Player>>, 
-	texture_atlases: Res<Assets<TextureAtlas>>,
-	mut health: Query<
-		(
-			&Health, //&mut Health,
-			&mut TextureAtlasSprite,
-			&Handle<TextureAtlas>,
-		),
-		With<Health>
-	>,
-){//not completed
-	if(!player.is_empty()){
-	let (player, p_health, transform) = player.single();
-
-	for (health, mut sprite, texture_atlas_handle) in health.iter_mut() {
-		let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-			if sprite.index < texture_atlas.textures.len() as usize{
-				let hs_len : f32 = 10.0;//texture_atlas.textures.len() as f32;
-				let c_health : f32 = (p_health.health/10.);// % (texture_atlas.textures.len() as f32); //(player_health.health/10.).round() as f32;
-				//info!("{}", (hs_len - c_health).round() as usize); //checking if index is correct
-				
-				sprite.index = (sprite.index + (hs_len - c_health).round() as usize) % texture_atlas.textures.len() as usize; //Use health to determine the index of the health sprite to show
-			}
-		}
-	}
-}*/
-
-
 fn update_health(
 	//texture_atlases: Res<Assets<TextureAtlas>>,
 	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>,Without<Boss>,Without<Brick>)>,
 	mut player: Query<&Health, With<Player>>
-){//not completed
+){
 	
 	let mut sprite = health.single_mut();
 	let player = player.single_mut();
@@ -574,7 +567,6 @@ fn update_health(
 		0_usize
 	}
 	//Use health to determine the index of the health sprite to show
-
 } 
 
 /*
@@ -608,6 +600,7 @@ fn bomb_throw(
 	query: Query<&Transform, With<Player>>,
 	bomb_sheet: Res<BombSheet>,
 	mut player: Query<&mut Player, With<Player>>,
+	//mut inventory: Query<&InventoryCount, With<InventoryCount>>
 ){
 	if let Ok(player_tf) = query.get_single(){
 		if kb.just_pressed(KeyCode::F){
@@ -634,6 +627,7 @@ fn bomb_throw(
 			x_velocity: 0.,
 		});
 		player.bombs = player.bombs - 1.;
+		//inventory.b_count = inventory.b_count - 1.;
 		info!("bombs left: {}", player.bombs);
 	}
 		}
@@ -1009,3 +1003,92 @@ fn check_tile_collision_frag(
 // 			player.grounded = true;
 // 		}
 
+fn load_inventory_sheet(
+	mut commands: Commands,
+	asset_server: Res<AssetServer>,
+	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+	mut loading_assets: ResMut<LoadingAssets>,
+){
+	
+	let ib_handle = asset_server.load("inventory_bombs_small.png");
+	loading_assets.insert(
+		ib_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(ib_handle.clone_untyped(), &asset_server),
+	);
+
+	let ib_atlas = TextureAtlas::from_grid(ib_handle, Vec2::new(150., 32.5), 1, 1);
+	let ib_atlas_handle = texture_atlases.add(ib_atlas);
+
+	commands.insert_resource(InventoryAtlas(ib_atlas_handle));
+	
+}
+ 
+fn spawn_inventory(
+	mut commands: Commands,
+	inventory_sheet: Res<InventoryAtlas>,
+){
+	commands
+		.spawn_bundle(SpriteSheetBundle {
+			texture_atlas: inventory_sheet.clone(),
+			sprite: TextureAtlasSprite {
+				index: 0,
+				..default()
+			},
+			transform: Transform::from_xyz((WIN_W/2.) - (TILE_SIZE * 1.8) , (WIN_H/2.) - (TILE_SIZE * 0.3), 999.),
+			..default()
+		});
+		//.insert();
+
+}
+
+fn load_count_sheet(
+	mut commands: Commands,
+	asset_server: Res<AssetServer>,
+	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+	mut loading_assets: ResMut<LoadingAssets>,
+){
+	
+	let c_handle = asset_server.load("count_99.png");
+	loading_assets.insert(
+		c_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(c_handle.clone_untyped(), &asset_server),
+	);
+
+	let c_atlas = TextureAtlas::from_grid(c_handle, Vec2::new(80., 80.), 10, 10);
+	let c_atlas_handle = texture_atlases.add(c_atlas);
+
+	commands.insert_resource(CountAtlas(c_atlas_handle));
+	
+}
+ 
+fn spawn_count(
+	mut commands: Commands,
+	c_sheet: Res<CountAtlas>, //healthsheet instead
+){
+	commands
+		.spawn_bundle(SpriteSheetBundle {
+			texture_atlas: c_sheet.clone(),
+			sprite: TextureAtlasSprite {
+				index: 0,
+				..default()
+			},
+			transform: Transform::from_xyz((WIN_W/2.) - (TILE_SIZE * 0.6) , (WIN_H/2.) - (TILE_SIZE * 0.35), 999.),
+			..default()
+		})
+		.insert(InventoryCount::new());
+}
+
+fn update_count(
+	//texture_atlases: Res<Assets<TextureAtlas>>,
+	mut count: Query<&mut TextureAtlasSprite, (With<InventoryCount>, Without<Health>,Without<Player>,Without<Enemy>,Without<Boss>,Without<Brick>)>,
+	mut player: Query<&InventoryCount, With<Player>>
+){//not completed
+	
+	//let mut sprite = count.single_mut();
+	//let player = player.single_mut();
+	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+	//let hs_len : usize = texture_atlas.textures.len() as usize;
+	//sprite.index = (player.b_count).round() as usize;
+	//Use health to determine the index of the health sprite to show
+
+} 
