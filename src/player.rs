@@ -47,6 +47,13 @@ pub struct Bomb{
 	//grounded: bool,
 }
 
+#[derive(Component)]
+pub struct Fragment{
+	y_velocity: f32,
+	x_velocity: f32,
+	index: i32,
+}
+
 #[derive(Deref, DerefMut)]
 pub struct BombSheet(Handle<TextureAtlas>);
 //BOMB^
@@ -95,6 +102,8 @@ pub struct Direction; // 0 = Left,  1 = Right?
 #[derive(Deref, DerefMut)]
 pub struct PlayerSheet(Handle<TextureAtlas>);
 
+#[derive(Deref, DerefMut)]
+pub struct FragmentSheet(Handle<TextureAtlas>);
 
 
 
@@ -124,6 +133,8 @@ impl Plugin for PlayerPlugin {
 					.with_system(animate_bomb)
 					.with_system(bomb_throw)
 					.with_system(damage_walls)
+					.with_system(spawn_fragment)
+					.with_system(fragment_movement)
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -133,8 +144,8 @@ impl Plugin for PlayerPlugin {
 			.add_enter_system(GameState::Playing, spawn_health)
 			//BOMB
 			.add_enter_system(GameState::Loading, load_bomb_sheet)
-			.add_enter_system(GameState::Playing, spawn_bomb)
-			//.add_system(player_fire_system)
+			//.add_enter_system(GameState::Playing, spawn_bomb)
+			.add_enter_system(GameState::Loading, load_fragment_sheet)
 			/*.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
@@ -743,13 +754,188 @@ pub fn check_player_bomb_pickup_collision(
 	
 
 	for (bomb_entity, bomb_transform)  in bomb_query.iter(){
-		info!("bp check"); 
+		//info!("bp check"); 
 		let (player_transform, mut player) = player_query.single_mut();
 		if collide(player_transform.translation, Vec2::splat(50.), bomb_transform.translation, Vec2::splat(50.)).is_some() {
 				info!("bomb picked up");
-				player.bombs = 3.0;
+				player.bombs += 3.0;
 				commands.entity(bomb_entity).despawn();
 		}
 	}
 }
 //bomb collision if touch a neutral bomb, collect it
+
+fn load_fragment_sheet(
+	mut commands: Commands,
+	asset_server: Res<AssetServer>,
+	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+	mut loading_assets: ResMut<LoadingAssets>,
+) {
+	let fragment_handle = asset_server.load("fragment.png");
+	loading_assets.insert(
+		fragment_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(fragment_handle.clone_untyped(), &asset_server),
+	);
+
+	let fragment_atlas = TextureAtlas::from_grid(fragment_handle, Vec2::splat(20.), 1, 1);
+	let fragment_atlas_handle = texture_atlases.add(fragment_atlas);
+	
+	commands.insert_resource(FragmentSheet(fragment_atlas_handle));
+}
+
+fn spawn_fragment(
+	mut commands: Commands,
+	input: Res<Input<KeyCode>>,
+	fragment_sheet: Res<FragmentSheet>,
+	query: Query<(Entity, &Transform), (With<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>,
+){	
+	for (bomb_entity, bomb_tf) in query.iter() {
+		for i in 0..8{
+			//if input.just_pressed(KeyCode::F){
+			
+			info!("found bomb");
+			
+
+				let (x,y) = (bomb_tf.translation.x, bomb_tf.translation.y);
+
+				commands
+					.spawn_bundle(SpriteSheetBundle {
+						texture_atlas: fragment_sheet.clone(),
+						sprite: TextureAtlasSprite {
+							index: 0,
+							..default()
+						},
+						//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
+						transform: Transform::from_xyz(x, y, -1.),
+						..default()
+					})
+					.insert(AnimationTimer(Timer::from_seconds(1., true)))
+					.insert(Velocity::new())
+					.insert(Fragment{
+						
+						y_velocity: 0., //-1.0,
+						x_velocity: 0.,
+						index: i,
+					});
+					info!("{}", i);
+			//}
+		}
+	}
+}
+
+fn fragment_movement(
+	mut commands: Commands,
+	time: Res<Time>,
+	input: Res<Input<KeyCode>>,
+	collision: Query<&Transform, (With<Collider>, Without<Fragment>, Without<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>,
+	mut fragment: Query<(Entity, &mut Fragment, &mut Transform, &mut AnimationTimer), (With<Fragment>, Without<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>,){
+
+	for (entity, mut fragment, mut transform, mut timer) in fragment.iter_mut() {
+		timer.tick(time.delta());
+		if timer.just_finished() {
+			let (x,y) = (transform.translation.x, transform.translation.y);
+			transform.translation = Vec3::new(x, y, 900.);
+			let mut deltax = 0.0;
+			let mut deltay = 0.0;
+			
+			if fragment.index == 0{
+				deltax = -0.5;
+				deltay = 0.5;
+			}
+
+			if fragment.index == 1{
+				deltay = 0.5;
+			}
+
+			if fragment.index == 2{
+				deltax = 0.5;
+				deltay = 0.5;
+			}
+
+			if fragment.index == 3{
+				deltax = 0.5;
+			}
+
+			if fragment.index == 4{
+				deltax = 0.5;
+				deltay = -0.5;
+			}
+
+			if fragment.index == 5{
+				deltay = -0.5;
+			}
+
+			if fragment.index == 6{
+				deltax = -0.5;
+				deltay = -0.5
+			}
+
+			if fragment.index == 7{
+				deltax = -0.5;		
+			}
+
+			fragment.x_velocity = deltax;
+			let target = transform.translation + Vec3::new(deltax, 0., 0.);
+			if check_tile_collision_frag(target, &collision){
+				transform.translation = target;
+			}
+			fragment.y_velocity = deltay;
+			let target = transform.translation + Vec3::new(0., deltay, 0.);
+			if check_tile_collision_frag(target, &collision){
+				transform.translation = target;
+			}
+
+		}
+		//commands.entity(entity).despawn();
+	}
+}
+
+fn check_tile_collision_frag(
+	pos: Vec3,
+	wall_collide: &Query<&Transform, (With<Collider>, Without<Fragment>, Without<Bomb>, Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>
+) -> bool{
+	for wall in wall_collide.iter(){
+		let collision = collide(
+			pos,
+			Vec2::splat(TILE_SIZE * 0.9),
+			wall.translation,
+			Vec2::splat(TILE_SIZE)
+		);
+		if collision.is_some(){
+			return false;
+		}
+	}	
+	true
+}
+
+// if player.grounded && input.pressed(KeyCode::Space) { //changed to "pressed" instead of "just_pressed" because sometimes the jump wasn't working. Now you can hold space to jump when you hit the ground, but this seems acceptable.
+// 			player.y_velocity = JUMP_TIME * PLAYER_SPEED * TILE_SIZE * FRAME_TIME;
+// 		}
+
+// 		player.y_velocity += -25.0 * TILE_SIZE * FRAME_TIME;
+
+// 		let deltay = player.y_velocity * FRAME_TIME;
+		
+// 		let mut deltax = 0.0;
+
+// 		if input.pressed(KeyCode::A) {
+// 			deltax -= 1. * PLAYER_SPEED * TILE_SIZE * FRAME_TIME;
+// 		}
+
+// 		if input.pressed(KeyCode::D) {
+// 			deltax += 1. * PLAYER_SPEED * TILE_SIZE * FRAME_TIME;
+// 		}
+// 		player.x_velocity = deltax;
+// 		let target = transform.translation + Vec3::new(deltax, 0., 0.);
+// 		if check_tile_collision(target, &collision){
+// 			transform.translation = target;
+// 		}
+
+// 		let target = transform.translation + Vec3::new(0., deltay, 0.);
+// 		if check_tile_collision(target, &collision){
+// 			transform.translation = target;
+// 			player.grounded = false;
+// 		}else{
+// 			player.y_velocity = 0.0;
+// 			player.grounded = true;
+// 		}
