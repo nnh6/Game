@@ -544,6 +544,10 @@ fn generate_room(exits: [bool;4]) -> Room {
 				*character = 'D';
 			}
 
+			if *character == '-' && rng.gen_range(0..50) == 5 {
+				*character = 'H';
+			}
+
 			//place seed walls
 			cell_count += 1;
 			for location in new_room.seed_wall_locations {
