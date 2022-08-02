@@ -538,11 +538,11 @@ fn generate_room(exits: [bool;4]) -> Room {
 				*character = 'E';
 			}
 
-			if *character == '-' && rng.gen_range(0..100) == 10 {
+			if *character == '-' && rng.gen_range(0..30) == 10 {
 				*character = 'B';
 			}
 
-			if *character == '-' && rng.gen_range(0..15) == 3 {
+			if *character == '-' && rng.gen_range(0..100) == 3 {
 				*character = 'D';
 			}
 
