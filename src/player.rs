@@ -796,23 +796,25 @@ fn enter_new_room(
 		if player_transform.translation.y >= WIN_H/2.0-TILE_SIZE/2.0 {
 			player_transform.translation.y = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
 			map.y_coords += 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			//info!("newroom up");
 		}
 		else if player_transform.translation.x <= -WIN_W/2.0+TILE_SIZE/2.0{
 			player_transform.translation.x = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
 			map.x_coords -= 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
-			info!("newroom left");
+			//info!("newroom left");
 		}
 		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 {
 			player_transform.translation.x = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
-			//map.x_coords += 1 as usize;
+			map.x_coords += 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
-			info!("newroom right");
+			//info!("newroom right");
 		}
 		else if player_transform.translation.y < -WIN_H/2.0+TILE_SIZE/2.0 {
-			
-			info!("newroom down");
+			map.y_coords -= 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
+			//info!("newroom down");
 		}
 	}
 }
@@ -850,3 +852,4 @@ fn check_player_health_pickup_collision(
 		}
 	}
 }
+//todo find valid ground

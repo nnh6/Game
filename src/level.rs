@@ -1,9 +1,10 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader},
-	fmt,
+	fmt, env::current_exe,
 }; //might have to ask to use these
 
+use std::error::Error;
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use rand::prelude::*;
@@ -82,18 +83,19 @@ impl fmt::Display for Room {
 	}
 }
 
-#[derive(Component,Copy,Clone)]
+#[derive(Component,Clone)]
 pub struct Map
 {
-	map_coords:[[Room;MAP_WIDTH]; MAP_HEIGHT], //array of rooms on the map
+	map_coords: Vec<[Room;MAP_WIDTH]>, //array of rooms on the map
 	pub x_coords: usize,
 	pub y_coords: usize, //coordinates for location of the current room
+	pub cur_exits: [bool;4],
 }
 
 impl Map
 {
 	pub fn new() -> Self {
-		Self{map_coords: [[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
+		Self{map_coords: vec![[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0, cur_exits: [false,false,false,false] }
 	}
 }
 #[derive(Component)]
@@ -113,7 +115,7 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
 	fn build (&self, app: &mut App) {
 		app.add_enter_system(GameState::Loading, load_level)
-			.add_enter_system(GameState::Loading, read_map)
+			.add_enter_system(GameState::Loading, generate_map)
 			.add_enter_system(GameState::Playing, setup_level)
 			.add_enter_system(GameState::Traverse,despawn_all)
 			;
@@ -209,8 +211,17 @@ fn setup_level(
 	let brick_atlas = texture_atlases.get(&brick_sheet.0);
 	let brick_len = brick_atlas.unwrap().len();
 	let map = map_query.single_mut();
-	let current_room = map.map_coords[map.x_coords][map.y_coords];
+	
 	//generate and store new room if OOB
+	/* 
+	let (x,y) = (map.x_coords,map.y_coords);
+
+	if map.map_coords.len() >= x && map.map_coords[x].len() >= y{
+		map.map_coords[x][y] = generate_room(map.cur_exits);
+	}
+	*/
+	let current_room = map.map_coords[map.x_coords][map.y_coords];
+	
 	
 	let mut i = 0;
 	let t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
@@ -464,6 +475,15 @@ fn generate_room(exits: [bool;4]) -> Room {
 			}
 		}
 	}
+
+	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
+		for (j, character) in row.iter_mut().enumerate() {
+			if (i == 0 && exits[TOP])|| (j == 0 && exits[LEFT]) || (i == ROOM_HEIGHT - 1 && exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && exits[RIGHT]){
+				*character = '*';//place the exits at the end
+			}
+		}
+	}
+	
 	return new_room;
 }
 
@@ -484,5 +504,79 @@ fn despawn_all(
 	for e in entity.iter_mut() {
         commands.entity(e).despawn();
     }
+	let camera = OrthographicCameraBundle::new_2d();
+	commands.spawn_bundle(camera);
+
 	commands.insert_resource(NextState(GameState::Playing));
+}
+
+fn generate_map(
+	mut commands: Commands,
+	//mut rooms_query: Query<(&mut GennedRooms)>,
+	) {
+		let mut new_map = Map::new(); 
+		let mut rand_exits : [bool;4] = [true;4];
+		let mut rng = rand::thread_rng();
+		for i in 0..MAP_HEIGHT /*in new_map.map_coords.iter_mut().enumerate()*/ {
+			for j in 0..MAP_WIDTH/* in row.iter_mut().enumerate()*/ {
+
+
+				if rng.gen_range(0..=1) == 0 {
+					rand_exits[BOTTOM] = false;
+				}
+				else {
+					rand_exits[BOTTOM] = true;
+				}
+				if rng.gen_range(0..=1) == 0 {
+					rand_exits[RIGHT] = false; 
+				}
+				else {
+					rand_exits[RIGHT] = true;
+				} //random assignments need to be at the top of the function in case we need to reassign them
+
+				// we only randomly generate our bottom and right exits, since we know what the top and left have to be based on the previously generated rooms
+
+				if i == (MAP_HEIGHT-1)/2 {
+					if j == ((MAP_WIDTH-1)/2) - 1 {
+					 //connect to left exit of center room (we don't need to do the right exit because we check for that anyway)
+					}
+					else if j == ((MAP_WIDTH-1)/2) {
+						//code to load in this room
+						continue; //SKIP GENERATING THIS ROOM so we can use a starting room that is not random
+					}
+				}
+				if j == (MAP_WIDTH-1)/2 {
+					if i == ((MAP_HEIGHT-1)/2) - 1 {
+					 //connect to top exit of center room (we don't need to do the bottom because we check for that later anyway.)
+					}
+				}
+				//above section ensures we can insert a room in the middle and leave it connected
+
+				if i>0 && new_map.map_coords[i-1][j].exits[BOTTOM] { //is the above room connected to this one
+					rand_exits[TOP] = true;
+				}
+				else {
+					rand_exits[TOP] = false;			
+				}
+				if j>0 && new_map.map_coords[i][j-1].exits[RIGHT] { //is the left room connected to this one
+					rand_exits[LEFT] = true;
+				}
+				else {
+					rand_exits[LEFT] = false;
+				}
+				if i == MAP_HEIGHT-1 {
+					rand_exits[BOTTOM] = false;
+				}
+				if j == MAP_WIDTH-1 {
+					rand_exits[RIGHT] = false;
+				}
+				//info!("{}", i);
+				//info!("{}", j);
+				new_map.map_coords[i][j] = generate_room(rand_exits);
+			}
+
+		}
+		new_map.x_coords = 13;
+		new_map.y_coords = 12;
+		commands.spawn().insert(new_map);
 }
