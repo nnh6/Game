@@ -23,6 +23,8 @@ use crate::{
 	},
 	player::*,
 	enemy::*,
+	boss::*,
+	
 };
 
 const T: u32 = 5;	//CA threshold value
@@ -34,6 +36,7 @@ const LEFT: usize = 0;
 const RIGHT: usize = 1;
 const TOP: usize = 2;
 const BOTTOM: usize = 3;
+
 
 #[derive(Component)]
 pub struct Collider;
@@ -80,10 +83,10 @@ impl fmt::Display for Room {
 	}
 }
 
-#[derive(Component,Copy,Clone)]
+#[derive(Component,Clone)]
 pub struct Map
 {
-	map_coords:[[Room;MAP_WIDTH]; MAP_HEIGHT], //array of rooms on the map
+	map_coords: Vec<[Room;MAP_WIDTH]> , //array of rooms on the map
 	x_coords: usize,
 	y_coords: usize, //coordinates for location of the current room
 }
@@ -91,7 +94,7 @@ pub struct Map
 impl Map
 {
 	pub fn new() -> Self {
-		Self{map_coords: [[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
+		Self{map_coords: vec![[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
 	}
 }
 #[derive(Component)]
@@ -107,7 +110,7 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
 	fn build (&self, app: &mut App) {
 		app.add_enter_system(GameState::Loading, load_level)
-			.add_enter_system(GameState::Loading, read_map)
+			.add_enter_system(GameState::Loading, generate_map)
 			.add_enter_system(GameState::Playing, setup_level);
 	}
 }
@@ -169,6 +172,7 @@ fn setup_level(
 	door_image: Res<DoorImage>,
 	brick_sheet: Res<BrickSheet>,
 	enemy_sheet: Res<EnemySheet>,
+	boss_sheet: Res<BossSheet>,
 	bomb_sheet: Res<BombItemSheet>,
 ) {
 	commands
@@ -207,6 +211,7 @@ fn setup_level(
 							},
 							..default()
 						})
+						.insert(Health::new())
 						.insert(Brick)
 						.insert(Collider);
 						i += 1;
@@ -242,6 +247,24 @@ fn setup_level(
 						.insert(Enemy);
 					i += 1;
 				}
+				'T'=> {
+					commands
+						.spawn_bundle(SpriteSheetBundle {
+							texture_atlas: boss_sheet.clone(),
+							sprite: TextureAtlasSprite {
+								index: 0,
+								..default()
+							},
+							transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)+37.0, 900.0),
+								..default()
+							},
+							..default()
+						})
+						.insert(Health::new())
+						.insert(Boss{health:100.0,y_velocity:0.0,y_accel:0.0,x_velocity:0.0,last_move: 0.0,turtled:false,path: Vec3::new(0.,0.,0.)});
+					i += 1;
+				}
 				'U'=> {
 					commands
 						.spawn_bundle(SpriteSheetBundle {
@@ -271,7 +294,7 @@ fn setup_level(
 						},
 						//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
 						transform: Transform {
-								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)-23.0, 900.0),
 								..default()
 							},
 						..default()
@@ -290,8 +313,96 @@ fn setup_level(
 		}
     }
 }
+fn generate_map(
+	mut commands: Commands,
+	//mut rooms_query: Query<(&mut GennedRooms)>,
+	) {
+		let mut new_map = Map::new(); 
+		let mut rand_exits : [bool;4] = [true;4];
+		let mut rng = rand::thread_rng();
+		for i in 0..MAP_HEIGHT /*in new_map.map_coords.iter_mut().enumerate()*/ {
+			for j in 0..MAP_WIDTH/* in row.iter_mut().enumerate()*/ {
+				
+				let r1 : u8 = rng.gen_range(0..=1);
+				if r1 == 0 {
+					rand_exits[BOTTOM] = false;
+				}
+				else {
+					rand_exits[BOTTOM] = true;
+				}
+				let r2 : u8 = rng.gen_range(0..=1);
+				if r2 == 0 {
+					rand_exits[RIGHT] = false; 
+				}
+				else {
+					rand_exits[RIGHT] = true;
+				} //random assignments need to be at the top of the function in case we need to reassign them
+				
+				// we only randomly generate our bottom and right exits, since we know what the top and left have to be based on the previously generated rooms
+				
+				if i == (MAP_HEIGHT-1)/2 {
+					if j == ((MAP_WIDTH-1)/2) - 1 {
+						rand_exits[RIGHT] = true;
+					 //connect to left exit of center room (we don't need to do the right exit because we check for that anyway)
+					}
+					else if j == ((MAP_WIDTH-1)/2) {
+						//code to load in this room
+						new_map.map_coords[i][j] = starting_room();
+						continue; //SKIP GENERATING THIS ROOM so we can use a starting room that is not random
+					}
+				}
+				if j == (MAP_WIDTH-1)/2 {
+					if i == ((MAP_HEIGHT-1)/2) - 1 {
+					rand_exits[BOTTOM] = true;
+					//connect to top exit of center room (we don't need to do the bottom because we check for that later anyway.)
+					}
+				}
+				//above section ensures we can insert a room in the middle and leave it connected
+				
+				if i>0 && new_map.map_coords[i-1][j].exits[BOTTOM] { //is the above room connected to this one
+					rand_exits[TOP] = true;
+				}
+				else {
+					rand_exits[TOP] = false;			
+				}
+				if j>0 && new_map.map_coords[i][j-1].exits[RIGHT] { //is the left room connected to this one
+					rand_exits[LEFT] = true;
+				}
+				else {
+					rand_exits[LEFT] = false;
+				}
+				if i == MAP_HEIGHT-1 {
+					rand_exits[BOTTOM] = false;
+				}
+				if j == MAP_WIDTH-1 {
+					rand_exits[RIGHT] = false;
+				}
+				info!("{}", i);
+				info!("{}", j);
+				new_map.map_coords[i][j] = generate_room(rand_exits);
+			}
+			
+		}
+		new_map.x_coords = (MAP_WIDTH-1)/2;
+		new_map.y_coords = (MAP_WIDTH-1)/2;
+		commands.spawn().insert(new_map);
+}
 
-fn read_map(
+fn starting_room() -> Room {
+	let file = File::open("assets/start_room.txt").expect("No map file found");
+	let mut new_room = Room::new([true; 4]);
+	for(x, line) in BufReader::new(file).lines().enumerate() { //read each line from file
+		if let Ok(line) = line {
+			for (y, char) in line.chars().enumerate() { //read each char from line
+				new_room.room_coords[x%9][y%16] = char;
+			}
+		}
+	}
+	return new_room;
+}
+
+
+fn read_map( //No longer used
 	mut commands: Commands,
 	
 	//texture_atlases: Res<Assets<TextureAtlas>>,	
@@ -356,12 +467,26 @@ This trait will be important for generation, so we can make sure that adjacent r
 fn generate_room(exits: [bool;4]) -> Room {
 	let mut new_room = Room::new(exits);
 	let mut cell_count = 0;
+	let mut rng = thread_rng();
+	let door_here = rng.gen_range(0..100) == 50;
 
 	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
 		for (j, character) in row.iter_mut().enumerate() {
 			if (i == 0 && !exits[TOP])|| (j == 0 && !exits[LEFT]) || (i == ROOM_HEIGHT - 1 && !exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && !exits[RIGHT]){
 				//surround outside of room with walls
 				*character = 'U';
+			}
+
+			if *character == '-' && rng.gen_range(0..35) == 5 {
+				*character = 'E';
+			}
+
+			if *character == '-' && rng.gen_range(0..100) == 10 {
+				*character = 'B';
+			}
+
+			if *character == '-' && rng.gen_range(0..15) == 3 {
+				*character = 'D';
 			}
 
 			//place seed walls
@@ -392,6 +517,13 @@ fn generate_room(exits: [bool;4]) -> Room {
 				if neighboring_walls >= T {
 					new_room.room_coords[i][j] = '#';
 				}
+			}
+		}
+	}
+	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
+		for (j, character) in row.iter_mut().enumerate() {
+			if (i == 0 && exits[TOP])|| (j == 0 && exits[LEFT]) || (i == ROOM_HEIGHT - 1 && exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && exits[RIGHT]){
+				*character = '*';//place the exits at the end
 			}
 		}
 	}
