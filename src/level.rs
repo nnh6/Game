@@ -89,13 +89,13 @@ pub struct Map
 	map_coords: Vec<[Room;MAP_WIDTH]>, //array of rooms on the map
 	pub x_coords: usize,
 	pub y_coords: usize, //coordinates for location of the current room
-	pub cur_exits: [bool;4],
+	pub player_spawn: Transform,
 }
 
 impl Map
 {
 	pub fn new() -> Self {
-		Self{map_coords: vec![[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0, cur_exits: [false,false,false,false] }
+		Self{map_coords: vec![[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0, player_spawn: Transform::from_xyz(-400., -(WIN_H/2.) + (TILE_SIZE * 1.5), 900.) }
 	}
 }
 #[derive(Component)]
@@ -483,7 +483,7 @@ fn generate_room(exits: [bool;4]) -> Room {
 			}
 		}
 	}
-	
+
 	return new_room;
 }
 

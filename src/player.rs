@@ -193,8 +193,9 @@ fn load_player_sheet(
 fn spawn_player(
 	mut commands: Commands,
 	player_sheet: Res<PlayerSheet>,
+	mapq: Query<&Map>
 ){
-	
+	let map = mapq.single();
 	commands
 		.spawn_bundle(SpriteSheetBundle {
 			texture_atlas: player_sheet.clone(),
@@ -202,7 +203,7 @@ fn spawn_player(
 				index: 0,
 				..default()
 			},
-			transform: Transform::from_xyz(-400., -(WIN_H/2.) + (TILE_SIZE * 1.5), 900.),
+			transform: map.player_spawn,
 			..default()
 		})
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
@@ -795,26 +796,31 @@ fn enter_new_room(
 	for mut player_transform in player.iter_mut() {
 		if player_transform.translation.y >= WIN_H/2.0-TILE_SIZE/2.0 {
 			player_transform.translation.y = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			map.player_spawn = *player_transform;
 			map.y_coords += 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
-			//info!("newroom up");
+			info!("newroom up");
 		}
 		else if player_transform.translation.x <= -WIN_W/2.0+TILE_SIZE/2.0{
-			player_transform.translation.x = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			player_transform.translation.x = WIN_W/2.0+TILE_SIZE/2.0-TILE_SIZE;
+			map.player_spawn = *player_transform;
 			map.x_coords -= 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
-			//info!("newroom left");
+			info!("newroom left");
 		}
 		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 {
-			player_transform.translation.x = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			player_transform.translation.x = -WIN_W/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			map.player_spawn = *player_transform;
 			map.x_coords += 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
-			//info!("newroom right");
+			info!("newroom right");
 		}
-		else if player_transform.translation.y < -WIN_H/2.0+TILE_SIZE/2.0 {
+		else if player_transform.translation.y <= -WIN_H/2.0+TILE_SIZE/2.0 {
+			player_transform.translation.y = WIN_H/2.0-TILE_SIZE/2.0-TILE_SIZE;
+			map.player_spawn = *player_transform;
 			map.y_coords -= 1 as usize;
 			commands.insert_resource(NextState(GameState::Traverse));
-			//info!("newroom down");
+			info!("newroom down");
 		}
 	}
 }
