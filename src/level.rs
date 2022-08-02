@@ -302,14 +302,15 @@ fn generate_map(
 		for i in 0..MAP_HEIGHT /*in new_map.map_coords.iter_mut().enumerate()*/ {
 			for j in 0..MAP_WIDTH/* in row.iter_mut().enumerate()*/ {
 				
-
-				if rng.gen_range(0..=1) == 0 {
+				let r1 : u8 = rng.gen_range(0..=1);
+				if r1 == 0 {
 					rand_exits[BOTTOM] = false;
 				}
 				else {
 					rand_exits[BOTTOM] = true;
 				}
-				if rng.gen_range(0..=1) == 0 {
+				let r2 : u8 = rng.gen_range(0..=1);
+				if r2 == 0 {
 					rand_exits[RIGHT] = false; 
 				}
 				else {
@@ -320,16 +321,19 @@ fn generate_map(
 				
 				if i == (MAP_HEIGHT-1)/2 {
 					if j == ((MAP_WIDTH-1)/2) - 1 {
+						rand_exits[RIGHT] = true;
 					 //connect to left exit of center room (we don't need to do the right exit because we check for that anyway)
 					}
 					else if j == ((MAP_WIDTH-1)/2) {
 						//code to load in this room
+						new_map.map_coords[i][j] = starting_room();
 						continue; //SKIP GENERATING THIS ROOM so we can use a starting room that is not random
 					}
 				}
 				if j == (MAP_WIDTH-1)/2 {
 					if i == ((MAP_HEIGHT-1)/2) - 1 {
-					 //connect to top exit of center room (we don't need to do the bottom because we check for that later anyway.)
+					rand_exits[BOTTOM] = true;
+					//connect to top exit of center room (we don't need to do the bottom because we check for that later anyway.)
 					}
 				}
 				//above section ensures we can insert a room in the middle and leave it connected
@@ -358,12 +362,26 @@ fn generate_map(
 			}
 			
 		}
-		new_map.x_coords = 13;
-		new_map.y_coords = 12;
+		new_map.x_coords = (MAP_WIDTH-1)/2;
+		new_map.y_coords = (MAP_WIDTH-1)/2;
 		commands.spawn().insert(new_map);
 }
 
-fn read_map(
+fn starting_room() -> Room {
+	let file = File::open("assets/start_room.txt").expect("No map file found");
+	let mut new_room = Room::new([true; 4]);
+	for(x, line) in BufReader::new(file).lines().enumerate() { //read each line from file
+		if let Ok(line) = line {
+			for (y, char) in line.chars().enumerate() { //read each char from line
+				new_room.room_coords[x%9][y%16] = char;
+			}
+		}
+	}
+	return new_room;
+}
+
+
+fn read_map( //No longer used
 	mut commands: Commands,
 	
 	//texture_atlases: Res<Assets<TextureAtlas>>,	
