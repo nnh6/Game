@@ -64,6 +64,7 @@ enum GameState {
 	Playing,
 	Credits,
 	GameOver,
+	Traverse
 }
 
 fn main() {

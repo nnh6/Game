@@ -23,11 +23,13 @@ use crate::{
 	level::Door,
 	level::Collider,
 	level::Brick,
+	level::Map,
 	enemy::{
 		Enemy,
 		EnemySheet
 	},
 	level::BombItem,
+	level::HealthItem,
 	boss::Boss,
 };
 
@@ -81,25 +83,6 @@ impl Health {
 #[derive(Deref, DerefMut)]
 pub struct HealthAtlas(Handle<TextureAtlas>);
 
-
-
-#[derive(Deref, DerefMut)]
-pub struct InventoryAtlas(Handle<TextureAtlas>);
-
-#[derive(Deref, DerefMut)]
-pub struct CountAtlas(Handle<TextureAtlas>);
-
-#[derive(Component)]
-pub struct InventoryCount{
-	b_count: f32,
-}
-
-impl InventoryCount {
-	pub fn new() -> Self {
-		Self {b_count: 3.}
-	}
-}
-
 #[derive(Component, Deref, DerefMut)]
 pub struct Velocity {
 	velocity: Vec2,
@@ -126,6 +109,7 @@ pub struct PlayerSheet(Handle<TextureAtlas>);
 pub struct FragmentSheet(Handle<TextureAtlas>);
 
 
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
 struct FixedStep;
 
@@ -149,13 +133,14 @@ impl Plugin for PlayerPlugin {
 					.with_system(check_enemy_collision)
 					//BOMB
 					.with_system(check_player_bomb_pickup_collision)
+					.with_system(check_player_health_pickup_collision)
 					.with_system(animate_bomb)
 					.with_system(bomb_throw)
 					.with_system(enter_new_room)
 					.with_system(damage_walls)
 					.with_system(spawn_fragment)
 					.with_system(fragment_movement)
-					.with_system(update_count)
+
 					//.with_system(my_fixed_update)  //This tests the frame times for this system, if that ever comes up
 					.into()
 					); //moving
@@ -167,11 +152,6 @@ impl Plugin for PlayerPlugin {
 			.add_enter_system(GameState::Loading, load_bomb_sheet)
 			//.add_enter_system(GameState::Playing, spawn_bomb)
 			.add_enter_system(GameState::Loading, load_fragment_sheet)
-			.add_enter_system(GameState::Loading, load_inventory_sheet)
-			.add_enter_system(GameState::Playing, spawn_inventory)
-			.add_enter_system(GameState::Loading, load_count_sheet)
-			.add_enter_system(GameState::Playing, spawn_count)
-
 			/*.add_system_set(
 				ConditionSet::new()
 					.run_in_state(GameState::Playing)
@@ -224,7 +204,9 @@ fn load_player_sheet(
 fn spawn_player(
 	mut commands: Commands,
 	player_sheet: Res<PlayerSheet>,
+	mapq: Query<&Map>
 ){
+	let map = mapq.single();
 	commands
 		.spawn_bundle(SpriteSheetBundle {
 			texture_atlas: player_sheet.clone(),
@@ -232,7 +214,7 @@ fn spawn_player(
 				index: 0,
 				..default()
 			},
-			transform: Transform::from_xyz(-400., -(WIN_H/2.) + (TILE_SIZE * 2.5), 900.),
+			transform: map.player_spawn,
 			..default()
 		})
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
@@ -551,11 +533,41 @@ fn spawn_health(
 
 }
 
+/* 
+fn update_health(
+	player: Query<(Entity, &Health, &Transform), With<Player>>, 
+	texture_atlases: Res<Assets<TextureAtlas>>,
+	mut health: Query<
+		(
+			&Health, //&mut Health,
+			&mut TextureAtlasSprite,
+			&Handle<TextureAtlas>,
+		),
+		With<Health>
+	>,
+){//not completed
+	if(!player.is_empty()){
+	let (player, p_health, transform) = player.single();
+
+	for (health, mut sprite, texture_atlas_handle) in health.iter_mut() {
+		let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+			if sprite.index < texture_atlas.textures.len() as usize{
+				let hs_len : f32 = 10.0;//texture_atlas.textures.len() as f32;
+				let c_health : f32 = (p_health.health/10.);// % (texture_atlas.textures.len() as f32); //(player_health.health/10.).round() as f32;
+				//info!("{}", (hs_len - c_health).round() as usize); //checking if index is correct
+				
+				sprite.index = (sprite.index + (hs_len - c_health).round() as usize) % texture_atlas.textures.len() as usize; //Use health to determine the index of the health sprite to show
+			}
+		}
+	}
+}*/
+
+
 fn update_health(
 	//texture_atlases: Res<Assets<TextureAtlas>>,
 	mut health: Query<&mut TextureAtlasSprite, (With<Health>,Without<Player>,Without<Enemy>,Without<Boss>,Without<Brick>)>,
 	mut player: Query<&Health, With<Player>>
-){
+){//not completed
 	
 	let mut sprite = health.single_mut();
 	let player = player.single_mut();
@@ -567,6 +579,7 @@ fn update_health(
 		0_usize
 	}
 	//Use health to determine the index of the health sprite to show
+
 } 
 
 /*
@@ -600,7 +613,6 @@ fn bomb_throw(
 	query: Query<&Transform, With<Player>>,
 	bomb_sheet: Res<BombSheet>,
 	mut player: Query<&mut Player, With<Player>>,
-	//mut inventory: Query<&InventoryCount, With<InventoryCount>>
 ){
 	if let Ok(player_tf) = query.get_single(){
 		if kb.just_pressed(KeyCode::F){
@@ -627,7 +639,6 @@ fn bomb_throw(
 			x_velocity: 0.,
 		});
 		player.bombs = player.bombs - 1.;
-		//inventory.b_count = inventory.b_count - 1.;
 		info!("bombs left: {}", player.bombs);
 	}
 		}
@@ -796,23 +807,82 @@ fn check_player_bomb_pickup_collision(
 }//bomb collision if touch a neutral bomb, collect it
 
 fn enter_new_room(
-	player: Query<&Transform,With<Player>>,
+	mut player: Query<&mut Transform,With<Player>>,
+	mut mapq: Query<&mut Map>,
+	mut commands: Commands,
 ){
-	for player_transform in player.iter() {
+	//move player
+	//update map coords
+	//despawn?
+	//enter loading state
+	let mut map = mapq.single_mut();
+	for mut player_transform in player.iter_mut() {
 		if player_transform.translation.y >= WIN_H/2.0-TILE_SIZE/2.0 {
+			player_transform.translation.y = -WIN_H/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			map.player_spawn = *player_transform;
+			map.y_coords += 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom up");
 		}
 		else if player_transform.translation.x <= -WIN_W/2.0+TILE_SIZE/2.0{
+			player_transform.translation.x = WIN_W/2.0+TILE_SIZE/2.0-TILE_SIZE;
+			map.player_spawn = *player_transform;
+			map.x_coords -= 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom left");
 		}
 		else if player_transform.translation.x >= WIN_W/2.0-TILE_SIZE/2.0 {
+			player_transform.translation.x = -WIN_W/2.0+TILE_SIZE/2.0+TILE_SIZE;
+			map.player_spawn = *player_transform;
+			map.x_coords += 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom right");
 		}
-		else if player_transform.translation.y < -WIN_H/2.0+TILE_SIZE/2.0 {
+		else if player_transform.translation.y <= -WIN_H/2.0+TILE_SIZE/2.0 {
+			player_transform.translation.y = WIN_H/2.0-TILE_SIZE/2.0-TILE_SIZE;
+			map.player_spawn = *player_transform;
+			map.y_coords -= 1 as usize;
+			commands.insert_resource(NextState(GameState::Traverse));
 			info!("newroom down");
 		}
 	}
 }
+
+
+fn check_player_health_pickup_collision(
+	mut commands: Commands,
+	mut player_query: Query<
+		(
+			&Transform, 
+			&mut Player,
+			&mut Health,
+		),
+			(
+				With<Player>, 
+				Without<BombItem>
+			)>,
+	mut hp_query: Query<
+		(
+			Entity, 
+			&Transform,
+		),
+		(With<HealthItem>,
+		Without<Player>)
+		>,
+) {
+	
+
+	for (hp_entity, health_transform)  in hp_query.iter(){
+		//info!("bp check"); 
+		let (player_transform, mut player, mut health) = player_query.single_mut();
+		if collide(player_transform.translation, Vec2::splat(50.), health_transform.translation, Vec2::splat(50.)).is_some() {
+				//info!("bomb picked up");
+				health.health = 100.0;
+				commands.entity(hp_entity).despawn();
+		}
+	}
+}
+//todo find valid ground
 
 //bomb collision if touch a neutral bomb, collect it
 
@@ -1003,92 +1073,4 @@ fn check_tile_collision_frag(
 // 			player.grounded = true;
 // 		}
 
-fn load_inventory_sheet(
-	mut commands: Commands,
-	asset_server: Res<AssetServer>,
-	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-	mut loading_assets: ResMut<LoadingAssets>,
-){
-	
-	let ib_handle = asset_server.load("inventory_bombs_small.png");
-	loading_assets.insert(
-		ib_handle.clone_untyped(),
-		LoadingAssetInfo::for_handle(ib_handle.clone_untyped(), &asset_server),
-	);
 
-	let ib_atlas = TextureAtlas::from_grid(ib_handle, Vec2::new(150., 32.5), 1, 1);
-	let ib_atlas_handle = texture_atlases.add(ib_atlas);
-
-	commands.insert_resource(InventoryAtlas(ib_atlas_handle));
-	
-}
- 
-fn spawn_inventory(
-	mut commands: Commands,
-	inventory_sheet: Res<InventoryAtlas>,
-){
-	commands
-		.spawn_bundle(SpriteSheetBundle {
-			texture_atlas: inventory_sheet.clone(),
-			sprite: TextureAtlasSprite {
-				index: 0,
-				..default()
-			},
-			transform: Transform::from_xyz((WIN_W/2.) - (TILE_SIZE * 1.8) , (WIN_H/2.) - (TILE_SIZE * 0.3), 999.),
-			..default()
-		});
-		//.insert();
-
-}
-
-fn load_count_sheet(
-	mut commands: Commands,
-	asset_server: Res<AssetServer>,
-	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-	mut loading_assets: ResMut<LoadingAssets>,
-){
-	
-	let c_handle = asset_server.load("count_99.png");
-	loading_assets.insert(
-		c_handle.clone_untyped(),
-		LoadingAssetInfo::for_handle(c_handle.clone_untyped(), &asset_server),
-	);
-
-	let c_atlas = TextureAtlas::from_grid(c_handle, Vec2::new(80., 80.), 10, 10);
-	let c_atlas_handle = texture_atlases.add(c_atlas);
-
-	commands.insert_resource(CountAtlas(c_atlas_handle));
-	
-}
- 
-fn spawn_count(
-	mut commands: Commands,
-	c_sheet: Res<CountAtlas>, //healthsheet instead
-){
-	commands
-		.spawn_bundle(SpriteSheetBundle {
-			texture_atlas: c_sheet.clone(),
-			sprite: TextureAtlasSprite {
-				index: 0,
-				..default()
-			},
-			transform: Transform::from_xyz((WIN_W/2.) - (TILE_SIZE * 0.6) , (WIN_H/2.) - (TILE_SIZE * 0.35), 999.),
-			..default()
-		})
-		.insert(InventoryCount::new());
-}
-
-fn update_count(
-	//texture_atlases: Res<Assets<TextureAtlas>>,
-	mut count: Query<&mut TextureAtlasSprite, (With<InventoryCount>, Without<Health>,Without<Player>,Without<Enemy>,Without<Boss>,Without<Brick>)>,
-	mut player: Query<&InventoryCount, With<Player>>
-){//not completed
-	
-	//let mut sprite = count.single_mut();
-	//let player = player.single_mut();
-	//let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-	//let hs_len : usize = texture_atlas.textures.len() as usize;
-	//sprite.index = (player.b_count).round() as usize;
-	//Use health to determine the index of the health sprite to show
-
-} 
