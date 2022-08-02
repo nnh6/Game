@@ -38,6 +38,7 @@ const RIGHT: usize = 1;
 const TOP: usize = 2;
 const BOTTOM: usize = 3;
 
+
 #[derive(Component)]
 pub struct Collider;
 
@@ -365,8 +366,96 @@ fn setup_level(
 		}
     }
 }
+fn generate_map(
+	mut commands: Commands,
+	//mut rooms_query: Query<(&mut GennedRooms)>,
+	) {
+		let mut new_map = Map::new(); 
+		let mut rand_exits : [bool;4] = [true;4];
+		let mut rng = rand::thread_rng();
+		for i in 0..MAP_HEIGHT /*in new_map.map_coords.iter_mut().enumerate()*/ {
+			for j in 0..MAP_WIDTH/* in row.iter_mut().enumerate()*/ {
+				
+				let r1 : u8 = rng.gen_range(0..=1);
+				if r1 == 0 {
+					rand_exits[BOTTOM] = false;
+				}
+				else {
+					rand_exits[BOTTOM] = true;
+				}
+				let r2 : u8 = rng.gen_range(0..=1);
+				if r2 == 0 {
+					rand_exits[RIGHT] = false; 
+				}
+				else {
+					rand_exits[RIGHT] = true;
+				} //random assignments need to be at the top of the function in case we need to reassign them
+				
+				// we only randomly generate our bottom and right exits, since we know what the top and left have to be based on the previously generated rooms
+				
+				if i == (MAP_HEIGHT-1)/2 {
+					if j == ((MAP_WIDTH-1)/2) - 1 {
+						rand_exits[RIGHT] = true;
+					 //connect to left exit of center room (we don't need to do the right exit because we check for that anyway)
+					}
+					else if j == ((MAP_WIDTH-1)/2) {
+						//code to load in this room
+						new_map.map_coords[i][j] = starting_room();
+						continue; //SKIP GENERATING THIS ROOM so we can use a starting room that is not random
+					}
+				}
+				if j == (MAP_WIDTH-1)/2 {
+					if i == ((MAP_HEIGHT-1)/2) - 1 {
+					rand_exits[BOTTOM] = true;
+					//connect to top exit of center room (we don't need to do the bottom because we check for that later anyway.)
+					}
+				}
+				//above section ensures we can insert a room in the middle and leave it connected
+				
+				if i>0 && new_map.map_coords[i-1][j].exits[BOTTOM] { //is the above room connected to this one
+					rand_exits[TOP] = true;
+				}
+				else {
+					rand_exits[TOP] = false;			
+				}
+				if j>0 && new_map.map_coords[i][j-1].exits[RIGHT] { //is the left room connected to this one
+					rand_exits[LEFT] = true;
+				}
+				else {
+					rand_exits[LEFT] = false;
+				}
+				if i == MAP_HEIGHT-1 {
+					rand_exits[BOTTOM] = false;
+				}
+				if j == MAP_WIDTH-1 {
+					rand_exits[RIGHT] = false;
+				}
+				info!("{}", i);
+				info!("{}", j);
+				new_map.map_coords[i][j] = generate_room(rand_exits);
+			}
+			
+		}
+		new_map.x_coords = (MAP_WIDTH-1)/2;
+		new_map.y_coords = (MAP_WIDTH-1)/2;
+		commands.spawn().insert(new_map);
+}
 
-fn read_map(
+fn starting_room() -> Room {
+	let file = File::open("assets/start_room.txt").expect("No map file found");
+	let mut new_room = Room::new([true; 4]);
+	for(x, line) in BufReader::new(file).lines().enumerate() { //read each line from file
+		if let Ok(line) = line {
+			for (y, char) in line.chars().enumerate() { //read each char from line
+				new_room.room_coords[x%9][y%16] = char;
+			}
+		}
+	}
+	return new_room;
+}
+
+
+fn read_map( //No longer used
 	mut commands: Commands,
 	
 	//texture_atlases: Res<Assets<TextureAtlas>>,	
@@ -432,6 +521,7 @@ fn generate_room(exits: [bool;4]) -> Room {
 	let mut new_room = Room::new(exits);
 	let mut cell_count = 0;
 	let mut rng = thread_rng();
+	let door_here = rng.gen_range(0..100) == 50;
 
 	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
 		for (j, character) in row.iter_mut().enumerate() {
@@ -442,6 +532,14 @@ fn generate_room(exits: [bool;4]) -> Room {
 
 			if *character == '-' && rng.gen_range(0..35) == 5 {
 				*character = 'E';
+			}
+
+			if *character == '-' && rng.gen_range(0..100) == 10 {
+				*character = 'B';
+			}
+
+			if *character == '-' && rng.gen_range(0..15) == 3 {
+				*character = 'D';
 			}
 
 			//place seed walls
@@ -475,7 +573,6 @@ fn generate_room(exits: [bool;4]) -> Room {
 			}
 		}
 	}
-
 	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
 		for (j, character) in row.iter_mut().enumerate() {
 			if (i == 0 && exits[TOP])|| (j == 0 && exits[LEFT]) || (i == ROOM_HEIGHT - 1 && exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && exits[RIGHT]){
@@ -483,7 +580,6 @@ fn generate_room(exits: [bool;4]) -> Room {
 			}
 		}
 	}
-
 	return new_room;
 }
 
