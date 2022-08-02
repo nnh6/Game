@@ -39,8 +39,8 @@ const PROGRESS_FRAME: f32 = 5.;
 const PLAYER_BOLT_SPRITE: &str = "bolt.png";
 const PLAYER_BOLT_SIZE: (f32, f32) = (9., 54.);
 const SPRITE_SCALE: f32 = 0.5;
-const MAP_WIDTH: usize = 30;
-const MAP_HEIGHT: usize = 30;
+const MAP_WIDTH: usize = 100;
+const MAP_HEIGHT: usize = 100;
 const ROOM_WIDTH: usize = 16;
 const ROOM_HEIGHT: usize = 9;
 
