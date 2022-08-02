@@ -638,6 +638,7 @@ fn spawn_bomb(
 	mut commands: Commands,
 	bomb_sheet: Res<BombSheet>,
 ){
+	
 	commands
 		.spawn_bundle(SpriteSheetBundle {
 			texture_atlas: bomb_sheet.clone(),
@@ -787,13 +788,16 @@ fn spawn_fragment(
 	mut commands: Commands,
 	input: Res<Input<KeyCode>>,
 	fragment_sheet: Res<FragmentSheet>,
-	query: Query<(Entity, &Transform), (With<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>,
+	query: Query<(Entity, &Transform), (With<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>,Without<Fragment>)>,
 ){	
-	for (bomb_entity, bomb_tf) in query.iter() {
-		for i in 0..8{
+	//if input.pressed(KeyCode::F){
+		for (bomb_entity, bomb_tf) in query.iter() {
+		
+	//	for i in 0..8{
 			//if input.just_pressed(KeyCode::F){
 			
-			info!("found bomb");
+			
+				//info!("found bomb");
 			
 
 				let (x,y) = (bomb_tf.translation.x, bomb_tf.translation.y);
@@ -815,12 +819,12 @@ fn spawn_fragment(
 						
 						y_velocity: 0., //-1.0,
 						x_velocity: 0.,
-						index: i,
+						index: 0,
 					});
-					info!("{}", i);
+					//info!("{}", i);
 			//}
 		}
-	}
+	//}
 }
 
 fn fragment_movement(
@@ -830,9 +834,11 @@ fn fragment_movement(
 	collision: Query<&Transform, (With<Collider>, Without<Fragment>, Without<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>,
 	mut fragment: Query<(Entity, &mut Fragment, &mut Transform, &mut AnimationTimer), (With<Fragment>, Without<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>,){
 
+	let mut anim_complete = false;
 	for (entity, mut fragment, mut transform, mut timer) in fragment.iter_mut() {
 		timer.tick(time.delta());
-		if timer.just_finished() {
+		if timer.just_finished() || anim_complete{
+			anim_complete = true;
 			let (x,y) = (transform.translation.x, transform.translation.y);
 			transform.translation = Vec3::new(x, y, 900.);
 			let mut deltax = 0.0;
@@ -874,15 +880,22 @@ fn fragment_movement(
 				deltax = -0.5;		
 			}
 
+			deltax = deltax * TILE_SIZE * FRAME_TIME * 100.;
+			deltay = deltay  * TILE_SIZE * FRAME_TIME * 100.;
+
 			fragment.x_velocity = deltax;
 			let target = transform.translation + Vec3::new(deltax, 0., 0.);
 			if check_tile_collision_frag(target, &collision){
 				transform.translation = target;
+			}else{
+				commands.entity(entity).despawn();
 			}
 			fragment.y_velocity = deltay;
 			let target = transform.translation + Vec3::new(0., deltay, 0.);
 			if check_tile_collision_frag(target, &collision){
 				transform.translation = target;
+			}else{
+				commands.entity(entity).despawn();
 			}
 
 		}
