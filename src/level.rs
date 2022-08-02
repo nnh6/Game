@@ -96,7 +96,7 @@ pub struct Map
 impl Map
 {
 	pub fn new() -> Self {
-		Self{map_coords: vec![[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0, player_spawn: Transform::from_xyz(-400., -(WIN_H/2.) + (TILE_SIZE * 1.5), 900.) }
+		Self{map_coords: vec![[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0, player_spawn: Transform::from_xyz(-400., -(WIN_H/2.) + (TILE_SIZE * 2.5), 900.) }
 	}
 }
 #[derive(Component)]
@@ -157,7 +157,7 @@ fn load_level(
 		LoadingAssetInfo::for_handle(door_handle.clone_untyped(), &asset_server),
 	);
 	commands.insert_resource(DoorImage(door_handle));
-	info!("{}", generate_room([false, true, true, false]));
+	//info!("{}", generate_room([false, true, true, false]));
 
 	//Bomb
 	let bomb_handle = asset_server.load("bomb_boom.png");
@@ -221,8 +221,9 @@ fn setup_level(
 		map.map_coords[x][y] = generate_room(map.cur_exits);
 	}
 	*/
-	let current_room = map.map_coords[map.x_coords][map.y_coords];
-	
+	let current_room = map.map_coords[map.y_coords][map.x_coords];
+	info!("{:?}", [map.x_coords, map.y_coords]);
+	info!("{:?}", current_room.exits);
 	
 	let mut i = 0;
 	let t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
@@ -430,14 +431,16 @@ fn generate_map(
 				if j == MAP_WIDTH-1 {
 					rand_exits[RIGHT] = false;
 				}
-				info!("{}", i);
-				info!("{}", j);
+				//info!("{}", i);
+				//info!("{}", j);
+				info!("{:?}", [i,j]);
+				if i>0 { info!("{:?}", [rand_exits[TOP],new_map.map_coords[i-1][j].exits[BOTTOM]]);}
 				new_map.map_coords[i][j] = generate_room(rand_exits);
 			}
 			
 		}
 		new_map.x_coords = (MAP_WIDTH-1)/2;
-		new_map.y_coords = (MAP_WIDTH-1)/2;
+		new_map.y_coords = (MAP_HEIGHT-1)/2;
 		commands.spawn().insert(new_map);
 }
 
@@ -575,8 +578,13 @@ fn generate_room(exits: [bool;4]) -> Room {
 	}
 	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
 		for (j, character) in row.iter_mut().enumerate() {
+			
 			if (i == 0 && exits[TOP])|| (j == 0 && exits[LEFT]) || (i == ROOM_HEIGHT - 1 && exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && exits[RIGHT]){
-				*character = '*';//place the exits at the end
+				*character = '-';//place the exits at the end
+			}
+			if (i == 0 && !exits[TOP])|| (j == 0 && !exits[LEFT]) || (i == ROOM_HEIGHT - 1 && !exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && !exits[RIGHT]){
+				//surround outside of room with walls
+				*character = 'U';
 			}
 		}
 	}
@@ -589,7 +597,7 @@ fn gen_seed_wall_locations() -> [usize;N] {
 	for num in arr.iter_mut() {
 		*num = rng.gen_range(0..ROOM_WIDTH*ROOM_HEIGHT);
 	} 
-	info!("{:?}", arr);
+	//info!("{:?}", arr);
 	return arr;
 }
 
@@ -604,6 +612,7 @@ fn despawn_all(
 	commands.spawn_bundle(camera);
 
 	commands.insert_resource(NextState(GameState::Playing));
+
 }
 
 
@@ -676,4 +685,5 @@ fn generate_map(
 		new_map.x_coords = 13;
 		new_map.y_coords = 12;
 		commands.spawn().insert(new_map);
+
 }
