@@ -198,7 +198,7 @@ fn spawn_player(
 				index: 0,
 				..default()
 			},
-			transform: Transform::from_xyz(-400., -(WIN_H/2.) + 2.*(TILE_SIZE * 1.5), 900.),
+			transform: Transform::from_xyz(-400., -(WIN_H/2.) + (TILE_SIZE * 2.5), 900.),
 			..default()
 		})
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
