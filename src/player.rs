@@ -4,6 +4,8 @@ use std::convert::From;
 use std::time::Duration;
 use bevy::sprite::collide_aabb::collide;
 use bevy::sprite::collide_aabb::Collision;
+//use bevy_ascii_terminal::*; //for bombs
+
 use crate::{
 	WIN_W,
 	WIN_H,
@@ -94,9 +96,6 @@ pub struct Direction; // 0 = Left,  1 = Right?
 #[derive(Deref, DerefMut)]
 pub struct PlayerSheet(Handle<TextureAtlas>);
 
-
-
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
 struct FixedStep;
 
@@ -132,6 +131,7 @@ impl Plugin for PlayerPlugin {
 			//BOMB
 			.add_enter_system(GameState::Loading, load_bomb_sheet)
 			.add_enter_system(GameState::Playing, spawn_bomb)
+			//.add_enter_system(GameState::Playing, spawn_inventory)
 			//.add_system(player_fire_system)
 			/*.add_system_set(
 				ConditionSet::new()
@@ -705,13 +705,36 @@ pub fn check_player_bomb_pickup_collision(
 	
 
 	for (bomb_entity, bomb_transform)  in bomb_query.iter(){
-		info!("bp check"); 
+		//info!("bp check"); 
 		let (player_transform, mut player) = player_query.single_mut();
 		if collide(player_transform.translation, Vec2::splat(50.), bomb_transform.translation, Vec2::splat(50.)).is_some() {
 				info!("bomb picked up");
-				player.bombs = 3.0;
+				player.bombs += 3.0;
 				commands.entity(bomb_entity).despawn();
 		}
 	}
 }
 //bomb collision if touch a neutral bomb, collect it
+
+//spawn inventory text
+
+//update inventory
+/*
+fn update_inventory()
+{
+	let hello_world = Text::with_section(
+	"hello world!".to_string(),
+	TextStyle {
+		font: font_handle.clone(),
+		font_size: 60.0,
+		color: Color::WHITE,
+	},
+	TextAlignment {
+		vertical: VerticalAlign::Center,
+		horizontal: HorizontalAlign::Center,
+	},
+	);
+
+}*/
+
+
