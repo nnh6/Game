@@ -1,14 +1,12 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use bevy::sprite::collide_aabb::collide;
-use bevy::sprite::collide_aabb::Collision;
-use std::f32::consts::PI;
 
-use crate::enemy::Enemy;
+
+
+
 use crate::{
 	GameState,
-	TIME_STEP,
-	BASE_SPEED,
 	TILE_SIZE,
 	level::Collider,
 	loading::{
@@ -72,7 +70,7 @@ fn boss_movement_system(
 	collision: Query<&Transform, (With<Collider>, Without<Player>,Without<Boss>)>,
 ){
 	let now = time.seconds_since_startup() as f32;
-	for mut player_transform in player.iter_mut() {
+	for player_transform in player.iter_mut() {
 		for (mut transform,mut boss) in query.iter_mut(){
 			//current position
 			
@@ -117,7 +115,7 @@ fn boss_movement_system(
 }
 
 fn boss_animate(
-    texture_atlases: Res<Assets<TextureAtlas>>,
+    _texture_atlases: Res<Assets<TextureAtlas>>,
 	mut boss: Query<
 		(
 			&mut Boss,
@@ -128,7 +126,7 @@ fn boss_animate(
 		With<Boss>
 	>,
 ){
-    for (mut boss,mut sprite, texture_atlas_handle, mut transform) in boss.iter_mut() {
+    for (boss,mut sprite, _texture_atlas_handle, mut transform) in boss.iter_mut() {
         if boss.health <= 50.0{
            sprite.index = 1;
         }

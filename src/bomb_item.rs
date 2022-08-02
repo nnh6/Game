@@ -1,24 +1,16 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-use std::time::Duration;
+
 
 
 
 use crate::{
 	//for example bomb spawn
 	//WIN_W,
-	WIN_H,
-	TILE_SIZE,
-	ANIM_TIME,
 	GameState,
 	loading::{
 		LoadingAssets,
 		LoadingAssetInfo,
-	},
-	FRAME_TIME, level::BombItem,
-	player::{
-		Player,
-		PlayerSheet
 	}
 };
 
@@ -106,7 +98,7 @@ fn animate_bomb( //not complete yet
 ){
 	//info!("tick");
 	//let (entity, mut bomb, mut sprite, texture_atlas_handle, mut timer) = bomb.single_mut();
-	for (entity, bomb, mut sprite, texture_atlas_handle, mut timer) in bomb.iter_mut() {
+	for (entity, _bomb, mut sprite, texture_atlas_handle, mut timer) in bomb.iter_mut() {
 		
 		//let ground = bomb.grounded;
 		//info!("bomb");
@@ -114,7 +106,7 @@ fn animate_bomb( //not complete yet
 
 		if timer.just_finished() {
 			let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-			sprite.index = (sprite.index + 1);// % texture_atlas.textures.len();
+			sprite.index += 1;// % texture_atlas.textures.len();
 
 			if sprite.index >= texture_atlas.textures.len(){
 				commands.entity(entity).despawn();
