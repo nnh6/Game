@@ -23,6 +23,8 @@ use crate::{
 	},
 	player::*,
 	enemy::*,
+	boss::*,
+	
 };
 
 const T: u32 = 5;	//CA threshold value
@@ -170,6 +172,7 @@ fn setup_level(
 	door_image: Res<DoorImage>,
 	brick_sheet: Res<BrickSheet>,
 	enemy_sheet: Res<EnemySheet>,
+	boss_sheet: Res<BossSheet>,
 	bomb_sheet: Res<BombItemSheet>,
 ) {
 	commands
@@ -244,6 +247,24 @@ fn setup_level(
 						.insert(Enemy);
 					i += 1;
 				}
+				'T'=> {
+					commands
+						.spawn_bundle(SpriteSheetBundle {
+							texture_atlas: boss_sheet.clone(),
+							sprite: TextureAtlasSprite {
+								index: 0,
+								..default()
+							},
+							transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)+37.0, 900.0),
+								..default()
+							},
+							..default()
+						})
+						.insert(Health::new())
+						.insert(Boss{health:100.0,y_velocity:0.0,y_accel:0.0,x_velocity:0.0,last_move: 0.0,turtled:false,path: Vec3::new(0.,0.,0.)});
+					i += 1;
+				}
 				'U'=> {
 					commands
 						.spawn_bundle(SpriteSheetBundle {
@@ -273,7 +294,7 @@ fn setup_level(
 						},
 						//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
 						transform: Transform {
-								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)-23.0, 900.0),
 								..default()
 							},
 						..default()
@@ -446,12 +467,26 @@ This trait will be important for generation, so we can make sure that adjacent r
 fn generate_room(exits: [bool;4]) -> Room {
 	let mut new_room = Room::new(exits);
 	let mut cell_count = 0;
+	let mut rng = thread_rng();
+	let door_here = rng.gen_range(0..100) == 50;
 
 	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
 		for (j, character) in row.iter_mut().enumerate() {
 			if (i == 0 && !exits[TOP])|| (j == 0 && !exits[LEFT]) || (i == ROOM_HEIGHT - 1 && !exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && !exits[RIGHT]){
 				//surround outside of room with walls
 				*character = 'U';
+			}
+
+			if *character == '-' && rng.gen_range(0..35) == 5 {
+				*character = 'E';
+			}
+
+			if *character == '-' && rng.gen_range(0..100) == 10 {
+				*character = 'B';
+			}
+
+			if *character == '-' && rng.gen_range(0..15) == 3 {
+				*character = 'D';
 			}
 
 			//place seed walls
