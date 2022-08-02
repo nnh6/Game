@@ -1024,6 +1024,7 @@ fn spawn_fragment(
 
 fn fragment_movement(
 	mut commands: Commands,
+	mut wall_query: Query<(Entity, &Transform, &mut Health), (With<Brick>, Without<Player>, Without<Enemy>)>,
 	time: Res<Time>,
 	input: Res<Input<KeyCode>>,
 	collision: Query<&Transform, (With<Collider>, Without<Fragment>)>,
@@ -1032,6 +1033,7 @@ fn fragment_movement(
 	//let mut anim_complete = false;
 
 	for (entity, mut fragment, mut transform, mut timer) in fragment.iter_mut() {
+		
 		//timer.tick(time.delta());
 		//if timer.just_finished() || anim_complete{
 			//anim_complete = true;
@@ -1086,7 +1088,17 @@ fn fragment_movement(
 			if check_tile_collision_frag(target, &collision){
 				transform.translation = target;
 			}else{
-				info!("collided");
+				for (wall_entity, wall_transform, mut wall_health) in wall_query.iter_mut() {
+					let collision = collide(transform.translation, Vec2::splat(30.), wall_transform.translation, Vec2::splat(80.));
+					if collision.is_some() {
+								wall_health.health -= 20.;
+								info!("{}", wall_health.health);
+								
+								if wall_health.health <= 0. {
+									commands.entity(wall_entity).despawn();
+								}
+					}
+				}
 				commands.entity(entity).despawn();
 			}
 			fragment.y_velocity = deltay;
@@ -1094,8 +1106,20 @@ fn fragment_movement(
 			if check_tile_collision_frag(target, &collision){
 				transform.translation = target;
 			}else{
-				info!("collided");
+				for (wall_entity, wall_transform, mut wall_health) in wall_query.iter_mut() {
+					let collision = collide(transform.translation, Vec2::splat(30.), wall_transform.translation, Vec2::splat(80.));
+					if collision.is_some() {
+								wall_health.health -= 20.;
+								info!("{}", wall_health.health);
+								
+								if wall_health.health <= 0. {
+									commands.entity(wall_entity).despawn();
+								}
+					}
+				}
+				//info!("collided");
 				commands.entity(entity).despawn();
+				
 			}
 
 		//}
