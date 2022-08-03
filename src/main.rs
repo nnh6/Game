@@ -9,7 +9,7 @@ mod loading;
 mod player;
 mod level;
 mod music;
-
+mod boss;
 mod enemy;
 mod start_menu;
 mod bomb_item;
@@ -20,6 +20,7 @@ use player::PlayerPlugin;
 use enemy::EnemyPlugin;
 use start_menu::MainMenuPlugin;
 use bomb_item::BombPlugin;
+use boss::BossPlugin;
 
 const TITLE: &str = "Miner Pitfall!";
 const WIN_W: f32 = 1280.;
@@ -38,8 +39,8 @@ const PROGRESS_FRAME: f32 = 5.;
 const PLAYER_BOLT_SPRITE: &str = "bolt.png";
 const PLAYER_BOLT_SIZE: (f32, f32) = (9., 54.);
 const SPRITE_SCALE: f32 = 0.5;
-const MAP_WIDTH: usize = 2;
-const MAP_HEIGHT: usize = 1;
+const MAP_WIDTH: usize = 100;
+const MAP_HEIGHT: usize = 100;
 const ROOM_WIDTH: usize = 16;
 const ROOM_HEIGHT: usize = 9;
 
@@ -63,6 +64,7 @@ enum GameState {
 	Playing,
 	Credits,
 	GameOver,
+	Traverse
 }
 
 fn main() {
@@ -107,6 +109,7 @@ fn main() {
 		.add_plugin(EnemyPlugin)
 		.add_plugin(MainMenuPlugin)
 		.add_plugin(BombPlugin)
+		.add_plugin(BossPlugin)
 		.run();
 }
 
@@ -140,7 +143,7 @@ fn display_slides(
 	mut p_timer: ResMut<PopupTimer>,
 ) {
 	p_timer.timer.tick(time.delta());
-	if (p_timer.timer.just_finished() || p_timer.timer_start == true) && p_timer.z < 8. {
+	if (p_timer.timer.just_finished() || p_timer.timer_start) && p_timer.z < 8. {
 		let name = p_timer.names[p_timer.z as usize];
 		p_timer.z += 1.;
 		p_timer.timer_start = false;

@@ -4,6 +4,7 @@ use std::{
 	fmt,
 }; //might have to ask to use these
 
+
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use rand::prelude::*;
@@ -23,6 +24,8 @@ use crate::{
 	},
 	player::*,
 	enemy::*,
+	boss::*,
+	
 };
 
 const T: u32 = 5;	//CA threshold value
@@ -34,6 +37,7 @@ const LEFT: usize = 0;
 const RIGHT: usize = 1;
 const TOP: usize = 2;
 const BOTTOM: usize = 3;
+
 
 #[derive(Component)]
 pub struct Collider;
@@ -64,7 +68,7 @@ impl Room
 		Self {
 			seed_wall_locations: gen_seed_wall_locations(),
 			room_coords: [['-'; ROOM_WIDTH]; ROOM_HEIGHT],
-			exits: exits,
+			exits,
 		}
 	}
 }
@@ -80,35 +84,42 @@ impl fmt::Display for Room {
 	}
 }
 
-#[derive(Component,Copy,Clone)]
+#[derive(Component,Clone)]
 pub struct Map
 {
-	map_coords:[[Room;MAP_WIDTH]; MAP_HEIGHT], //array of rooms on the map
-	x_coords: usize,
-	y_coords: usize, //coordinates for location of the current room
+	map_coords: Vec<[Room;MAP_WIDTH]>, //array of rooms on the map
+	pub x_coords: usize,
+	pub y_coords: usize, //coordinates for location of the current room
+	pub player_spawn: Transform,
 }
 
 impl Map
 {
 	pub fn new() -> Self {
-		Self{map_coords: [[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0 }
+		Self{map_coords: vec![[Room::new([true, true, true, true]); MAP_WIDTH]; MAP_HEIGHT], x_coords: 0, y_coords: 0, player_spawn: Transform::from_xyz(-400., -(WIN_H/2.) + (TILE_SIZE * 2.5), 900.) }
 	}
 }
 #[derive(Component)]
 pub struct BombItem;
+
+#[derive(Component)]
+pub struct HealthItem;
 
 // Will need to access these with .0, not deriving Deref/DerefMut
 pub struct BackgroundImage(Handle<Image>);
 pub struct DoorImage(Handle<Image>);
 pub struct BrickSheet(Handle<TextureAtlas>);
 pub struct BombItemSheet(Handle<TextureAtlas>);
+pub struct HealthItemSheet(Handle<TextureAtlas>);
 
 pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
 	fn build (&self, app: &mut App) {
 		app.add_enter_system(GameState::Loading, load_level)
-			.add_enter_system(GameState::Loading, read_map)
-			.add_enter_system(GameState::Playing, setup_level);
+			.add_enter_system(GameState::Loading, generate_map)
+			.add_enter_system(GameState::Playing, setup_level)
+			.add_enter_system(GameState::Traverse,despawn_all)
+			;
 	}
 }
 
@@ -146,7 +157,7 @@ fn load_level(
 		LoadingAssetInfo::for_handle(door_handle.clone_untyped(), &asset_server),
 	);
 	commands.insert_resource(DoorImage(door_handle));
-	info!("{}", generate_room([false, true, true, false]));
+	//info!("{}", generate_room([false, true, true, false]));
 
 	//Bomb
 	let bomb_handle = asset_server.load("bomb_boom.png");
@@ -159,6 +170,18 @@ fn load_level(
 	let bomb_atlas_handle = texture_atlases.add(bomb_atlas);
 
 	commands.insert_resource(BombItemSheet(bomb_atlas_handle));
+
+	//Health
+	let hp_handle = asset_server.load("Health_Item.png");
+	loading_assets.0.insert(
+		hp_handle.clone_untyped(),
+		LoadingAssetInfo::for_handle(hp_handle.clone_untyped(), &asset_server),
+	);
+
+	let hp_atlas = TextureAtlas::from_grid(hp_handle, Vec2::new(45.,35.), 1, 1);
+	let hp_atlas_handle = texture_atlases.add(hp_atlas);
+
+	commands.insert_resource(HealthItemSheet(hp_atlas_handle));
 }
 
 fn setup_level(
@@ -169,7 +192,9 @@ fn setup_level(
 	door_image: Res<DoorImage>,
 	brick_sheet: Res<BrickSheet>,
 	enemy_sheet: Res<EnemySheet>,
+	boss_sheet: Res<BossSheet>,
 	bomb_sheet: Res<BombItemSheet>,
+	hp_sheet: Res<HealthItemSheet>
 ) {
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -187,7 +212,19 @@ fn setup_level(
 	let brick_atlas = texture_atlases.get(&brick_sheet.0);
 	let brick_len = brick_atlas.unwrap().len();
 	let map = map_query.single_mut();
-	let current_room = map.map_coords[map.x_coords][map.y_coords];
+	
+	//generate and store new room if OOB
+	/* 
+	let (x,y) = (map.x_coords,map.y_coords);
+
+	if map.map_coords.len() >= x && map.map_coords[x].len() >= y{
+		map.map_coords[x][y] = generate_room(map.cur_exits);
+	}
+	*/
+	let current_room = map.map_coords[map.y_coords][map.x_coords];
+	info!("{:?}", [map.x_coords, map.y_coords]);
+	info!("{:?}", current_room.exits);
+	
 	let mut i = 0;
 	let t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
 	for(y, line) in current_room.room_coords.iter().enumerate() { //read each line from map
@@ -243,6 +280,24 @@ fn setup_level(
 						.insert(Enemy);
 					i += 1;
 				}
+				'T'=> {
+					commands
+						.spawn_bundle(SpriteSheetBundle {
+							texture_atlas: boss_sheet.clone(),
+							sprite: TextureAtlasSprite {
+								index: 0,
+								..default()
+							},
+							transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)+37.0, 900.0),
+								..default()
+							},
+							..default()
+						})
+						.insert(Health::new())
+						.insert(Boss{health:100.0,y_velocity:0.0,y_accel:0.0,x_velocity:0.0,last_move: 0.0,turtled:false,path: Vec3::new(0.,0.,0.)});
+					i += 1;
+				}
 				'U'=> {
 					commands
 						.spawn_bundle(SpriteSheetBundle {
@@ -272,7 +327,7 @@ fn setup_level(
 						},
 						//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
 						transform: Transform {
-								translation: t + Vec3::new(x as f32 * TILE_SIZE, -(y as f32) * TILE_SIZE, 100.0),
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)-23.0, 900.0),
 								..default()
 							},
 						..default()
@@ -280,6 +335,27 @@ fn setup_level(
 					//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 					//.insert(Velocity::new())
 					.insert(BombItem);
+					//ENEMY CODE
+					i += 1;
+				}
+				'H'=> {
+					commands
+					.spawn_bundle(SpriteSheetBundle {
+						texture_atlas: hp_sheet.0.clone(),
+						sprite: TextureAtlasSprite {
+							index: 0,
+							..default()
+						},
+						//transform: Transform::from_xyz(200., -(WIN_H/2.) + (TILE_SIZE * 1.22), 900.),
+						transform: Transform {
+								translation: t + Vec3::new(x as f32 * TILE_SIZE, (-(y as f32) * TILE_SIZE)-23.0, 900.0),
+								..default()
+							},
+						..default()
+					})
+					//.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+					//.insert(Velocity::new())
+					.insert(HealthItem);
 					//ENEMY CODE
 					i += 1;
 				}
@@ -292,7 +368,96 @@ fn setup_level(
     }
 }
 
-fn read_map(
+fn generate_map(
+	mut commands: Commands,
+	//mut rooms_query: Query<(&mut GennedRooms)>,
+	) {
+		let mut new_map = Map::new(); 
+		let mut rand_exits : [bool;4] = [true;4];
+		let mut rng = rand::thread_rng();
+		for i in 0..MAP_HEIGHT /*in new_map.map_coords.iter_mut().enumerate()*/ {
+			for j in 0..MAP_WIDTH/* in row.iter_mut().enumerate()*/ {
+				
+				let r1 : u8 = rng.gen_range(0..=1);
+				if r1 == 0 {
+					rand_exits[BOTTOM] = false;
+				}
+				else {
+					rand_exits[BOTTOM] = true;
+				}
+				let r2 : u8 = rng.gen_range(0..=1);
+				if r2 == 0 {
+					rand_exits[RIGHT] = false; 
+				}
+				else {
+					rand_exits[RIGHT] = true;
+				} //random assignments need to be at the top of the function in case we need to reassign them
+				
+				// we only randomly generate our bottom and right exits, since we know what the top and left have to be based on the previously generated rooms
+				
+				if i == (MAP_HEIGHT-1)/2 {
+					if j == ((MAP_WIDTH-1)/2) - 1 {
+						rand_exits[RIGHT] = true;
+					 //connect to left exit of center room (we don't need to do the right exit because we check for that anyway)
+					}
+					else if j == ((MAP_WIDTH-1)/2) {
+						//code to load in this room
+						new_map.map_coords[i][j] = starting_room();
+						continue; //SKIP GENERATING THIS ROOM so we can use a starting room that is not random
+					}
+				}
+				if j == (MAP_WIDTH-1)/2 && i == ((MAP_HEIGHT-1)/2) - 1 {
+    					rand_exits[BOTTOM] = true;
+    					//connect to top exit of center room (we don't need to do the bottom because we check for that later anyway.)
+    					}
+				//above section ensures we can insert a room in the middle and leave it connected
+				
+				if i>0 && new_map.map_coords[i-1][j].exits[BOTTOM] { //is the above room connected to this one
+					rand_exits[TOP] = true;
+				}
+				else {
+					rand_exits[TOP] = false;			
+				}
+				if j>0 && new_map.map_coords[i][j-1].exits[RIGHT] { //is the left room connected to this one
+					rand_exits[LEFT] = true;
+				}
+				else {
+					rand_exits[LEFT] = false;
+				}
+				if i == MAP_HEIGHT-1 {
+					rand_exits[BOTTOM] = false;
+				}
+				if j == MAP_WIDTH-1 {
+					rand_exits[RIGHT] = false;
+				}
+				//info!("{}", i);
+				//info!("{}", j);
+				info!("{:?}", [i,j]);
+				if i>0 { info!("{:?}", [rand_exits[TOP],new_map.map_coords[i-1][j].exits[BOTTOM]]);}
+				new_map.map_coords[i][j] = generate_room(rand_exits);
+			}
+			
+		}
+		new_map.x_coords = (MAP_WIDTH-1)/2;
+		new_map.y_coords = (MAP_HEIGHT-1)/2;
+		commands.spawn().insert(new_map);
+}
+
+fn starting_room() -> Room {
+	let file = File::open("assets/start_room.txt").expect("No map file found");
+	let mut new_room = Room::new([true; 4]);
+	for(x, line) in BufReader::new(file).lines().enumerate() { //read each line from file
+		if let Ok(line) = line {
+			for (y, char) in line.chars().enumerate() { //read each char from line
+				new_room.room_coords[x%9][y%16] = char;
+			}
+		}
+	}
+	new_room
+}
+
+
+fn read_map( //No longer used
 	mut commands: Commands,
 	
 	//texture_atlases: Res<Assets<TextureAtlas>>,	
@@ -308,7 +473,7 @@ fn read_map(
 	let mut z1 = 0;
 	let mut z2 = 0; //Current Map location is [z1],[z2]
 	let mut current_room = map.map_coords[z1][z2];
-	let t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
+	let _t = Vec3::new(-WIN_W/2. + TILE_SIZE/2., WIN_H/2. - TILE_SIZE/2., 0.);
 	for(x, line) in BufReader::new(file).lines().enumerate() { //read each line from file
 		if let Ok(line) = line {
 			for (y, char) in line.chars().enumerate() { //read each char from line
@@ -357,12 +522,30 @@ This trait will be important for generation, so we can make sure that adjacent r
 fn generate_room(exits: [bool;4]) -> Room {
 	let mut new_room = Room::new(exits);
 	let mut cell_count = 0;
+	let mut rng = thread_rng();
+	let _door_here = rng.gen_range(0..100) == 50;
 
 	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
 		for (j, character) in row.iter_mut().enumerate() {
 			if (i == 0 && !exits[TOP])|| (j == 0 && !exits[LEFT]) || (i == ROOM_HEIGHT - 1 && !exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && !exits[RIGHT]){
 				//surround outside of room with walls
 				*character = 'U';
+			}
+
+			if *character == '-' && rng.gen_range(0..35) == 5 {
+				*character = 'E';
+			}
+
+			if *character == '-' && rng.gen_range(0..30) == 10 {
+				*character = 'B';
+			}
+
+			if *character == '-' && rng.gen_range(0..100) == 3 {
+				*character = 'D';
+			}
+
+			if *character == '-' && rng.gen_range(0..50) == 5 {
+				*character = 'H';
 			}
 
 			//place seed walls
@@ -396,7 +579,19 @@ fn generate_room(exits: [bool;4]) -> Room {
 			}
 		}
 	}
-	return new_room;
+	for (i, row) in new_room.room_coords.iter_mut().enumerate() {
+		for (j, character) in row.iter_mut().enumerate() {
+			
+			if (i == 0 && exits[TOP])|| (j == 0 && exits[LEFT]) || (i == ROOM_HEIGHT - 1 && exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && exits[RIGHT]){
+				*character = '-';//place the exits at the end
+			}
+			if (i == 0 && !exits[TOP])|| (j == 0 && !exits[LEFT]) || (i == ROOM_HEIGHT - 1 && !exits[BOTTOM]) || (j == ROOM_WIDTH - 1 && !exits[RIGHT]){
+				//surround outside of room with walls
+				*character = 'U';
+			}
+		}
+	}
+	new_room
 }
 
 fn gen_seed_wall_locations() -> [usize;N] {
@@ -405,6 +600,22 @@ fn gen_seed_wall_locations() -> [usize;N] {
 	for num in arr.iter_mut() {
 		*num = rng.gen_range(0..ROOM_WIDTH*ROOM_HEIGHT);
 	} 
-	info!("{:?}", arr);
-	return arr;
+	//info!("{:?}", arr);
+	arr
 }
+
+fn despawn_all(
+	mut entity: Query<Entity,Without<Map>>,
+	mut commands: Commands
+){
+	for e in entity.iter_mut() {
+        commands.entity(e).despawn();
+    }
+	let camera = OrthographicCameraBundle::new_2d();
+	commands.spawn_bundle(camera);
+
+	commands.insert_resource(NextState(GameState::Playing));
+
+}
+
+
