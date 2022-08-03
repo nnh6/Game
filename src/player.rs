@@ -1041,8 +1041,7 @@ fn fragment_movement(
 			transform.translation = Vec3::new(x, y, 900.);
 			let mut deltax = 0.0;
 			let mut deltay = 0.0;
-			//fragment.y_velocity += -10.0 * TILE_SIZE * FRAME_TIME;
-			//deltay += fragment.y_velocity;
+			
 			if fragment.index == 0{
 				deltax = -0.5;
 				deltay = 0.5;
@@ -1080,10 +1079,14 @@ fn fragment_movement(
 			}
 			
 			
+
 			deltax = deltax * TILE_SIZE * FRAME_TIME * 10.;
 			deltay = deltay  * TILE_SIZE * FRAME_TIME * 10.;
-
+			
 			fragment.x_velocity = deltax;
+			
+			fragment.y_velocity += -0.5;
+			deltay += fragment.y_velocity;
 			let target = transform.translation + Vec3::new(deltax, 0., 0.);
 			if check_tile_collision_frag(target, &collision){
 				transform.translation = target;
