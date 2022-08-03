@@ -649,7 +649,7 @@ fn bomb_throw(
 							index: 0,
 							..default()
 						},
-						transform: Transform::from_xyz(x, (y- (TILE_SIZE * 0.25)), 900.), 
+						transform: Transform::from_xyz(x, y , 900.), 
 						//for throw, change the velocities for projectile/parabola trajectory and have spawn from player y (center of player sprite)
 						..default()
 					})
@@ -671,7 +671,7 @@ fn bomb_throw(
 							index: 0,
 							..default()
 						},
-						transform: Transform::from_xyz(x, (y- (TILE_SIZE * 0.25)), 900.), 
+						transform: Transform::from_xyz(x, y, 900.), 
 						//for throw, change the velocities for projectile/parabola trajectory and have spawn from player y (center of player sprite)
 						..default()
 					})
