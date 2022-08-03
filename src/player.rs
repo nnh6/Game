@@ -641,27 +641,53 @@ fn bomb_throw(
 			let (mut player, mut inventory) = player.single_mut();
 			//info!("Bomb dropped");
 			if player.bombs > 0. {
-			commands
-				.spawn_bundle(SpriteSheetBundle {
-					texture_atlas: bomb_sheet.clone(),
-					sprite: TextureAtlasSprite {
-						index: 0,
+				if player.x_velocity < 0.{
+					commands
+					.spawn_bundle(SpriteSheetBundle {
+						texture_atlas: bomb_sheet.clone(),
+						sprite: TextureAtlasSprite {
+							index: 0,
+							..default()
+						},
+						transform: Transform::from_xyz(x, (y- (TILE_SIZE * 0.25)), 900.), 
+						//for throw, change the velocities for projectile/parabola trajectory and have spawn from player y (center of player sprite)
 						..default()
-					},
-					transform: Transform::from_xyz(x, (y- (TILE_SIZE * 0.25)), 900.), 
-					//for throw, change the velocities for projectile/parabola trajectory and have spawn from player y (center of player sprite)
-					..default()
-				})
-				.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
-				//.insert(Velocity::new())
-				.insert(Bomb{
-					grounded: false,
-					y_velocity: 0., //-1.0,
-					x_velocity: 0.,
-				});
-				player.bombs = player.bombs - 1.;
-				info!("bombs left: {}", player.bombs);
+					})
+					.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+					//.insert(Velocity::new())
+					.insert(Bomb{
+						grounded: false,
+						y_velocity: 0., //-1.0,
+						x_velocity: -1.,
+					});
+					player.bombs = player.bombs - 1.;
+					inventory.b_count -= 1.0;
+					info!("bombs left: {}", player.bombs);
+				}else{
+					commands
+					.spawn_bundle(SpriteSheetBundle {
+						texture_atlas: bomb_sheet.clone(),
+						sprite: TextureAtlasSprite {
+							index: 0,
+							..default()
+						},
+						transform: Transform::from_xyz(x, (y- (TILE_SIZE * 0.25)), 900.), 
+						//for throw, change the velocities for projectile/parabola trajectory and have spawn from player y (center of player sprite)
+						..default()
+					})
+					.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+					//.insert(Velocity::new())
+					.insert(Bomb{
+						grounded: false,
+						y_velocity: 0., //-1.0,
+						x_velocity: 0.,
+					});
+					player.bombs = player.bombs - 1.;
+					inventory.b_count -= 1.0;
+					info!("bombs left: {}", player.bombs);
+				}
 				
+					
 			}
 			
 		}
@@ -680,7 +706,11 @@ fn move_bomb(
         if bomb.grounded {
             deltax = 0.0;
         }
-        deltax = deltax * TILE_SIZE * FRAME_TIME * 10.;
+        deltax = if bomb.x_velocity < 0. {
+			-deltax * TILE_SIZE * FRAME_TIME * 10.
+		}else {
+			deltax * TILE_SIZE * FRAME_TIME * 10.
+		};
         deltay = deltay  * TILE_SIZE * FRAME_TIME * 10.;
         
         bomb.x_velocity = deltax;
