@@ -45,7 +45,7 @@ pub struct Player{
 pub struct Bomb{
 	y_velocity: f32,
 	x_velocity: f32,
-	//grounded: bool,
+	grounded: bool,
 }
 
 #[derive(Component)]
@@ -151,6 +151,7 @@ impl Plugin for PlayerPlugin {
 					.with_system(check_player_health_pickup_collision)
 					.with_system(animate_bomb)
 					.with_system(bomb_throw)
+					.with_system(move_bomb)
 					.with_system(enter_new_room)
 					.with_system(damage_walls)
 					.with_system(spawn_fragment)
@@ -639,33 +640,87 @@ fn bomb_throw(
 			let (x,y) = (player_tf.translation.x, player_tf.translation.y);
 			let (mut player, mut inventory) = player.single_mut();
 			//info!("Bomb dropped");
-	if player.bombs > 0. {
-	commands
-		.spawn_bundle(SpriteSheetBundle {
-			texture_atlas: bomb_sheet.clone(),
-			sprite: TextureAtlasSprite {
-				index: 0,
-				..default()
-			},
-			transform: Transform::from_xyz(x, y- (TILE_SIZE * 0.25), 900.), 
-			//for throw, change the velocities for projectile/parabola trajectory and have spawn from player y (center of player sprite)
-			..default()
-		})
-		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
-		//.insert(Velocity::new())
-		.insert(Bomb{
-			//grounded: false,
-			y_velocity: 0., //-1.0,
-			x_velocity: 0.,
-		});
-		player.bombs -= 1.;
-		inventory.b_count -= 1.;
-		info!("bombs left: {}", player.bombs);
-	}
+			if player.bombs > 0. {
+			commands
+				.spawn_bundle(SpriteSheetBundle {
+					texture_atlas: bomb_sheet.clone(),
+					sprite: TextureAtlasSprite {
+						index: 0,
+						..default()
+					},
+					transform: Transform::from_xyz(x, (y- (TILE_SIZE * 0.25)), 900.), 
+					//for throw, change the velocities for projectile/parabola trajectory and have spawn from player y (center of player sprite)
+					..default()
+				})
+				.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
+				//.insert(Velocity::new())
+				.insert(Bomb{
+					grounded: false,
+					y_velocity: 0., //-1.0,
+					x_velocity: 0.,
+				});
+				player.bombs = player.bombs - 1.;
+				info!("bombs left: {}", player.bombs);
+				
+			}
+			
 		}
 	}
+	
 }
 
+fn move_bomb(
+    mut bomb_query: Query<(Entity, &mut Bomb, &mut Transform), (With<Bomb>,Without<BombItem>, Without<Player>, Without<Enemy>, Without<Brick>)>,
+    collision: Query<&Transform, (With<Collider>, Without<Bomb>)>,
+){
+    for(bomb_ent, mut bomb, mut transform) in bomb_query.iter_mut(){
+        
+        let mut deltax = 0.5;
+        let mut deltay = 0.0;
+        if bomb.grounded {
+            deltax = 0.0;
+        }
+        deltax = deltax * TILE_SIZE * FRAME_TIME * 10.;
+        deltay = deltay  * TILE_SIZE * FRAME_TIME * 10.;
+        
+        bomb.x_velocity = deltax;
+        
+        bomb.y_velocity += -0.5;
+        deltay += bomb.y_velocity;
+
+        let target = transform.translation + Vec3::new(deltax, 0., 0.);
+        if check_tile_collision_bomb(target, &collision){
+            transform.translation = target;
+        }else{
+            deltax = 0.0;
+        }
+        bomb.y_velocity = deltay;
+        let target = transform.translation + Vec3::new(0., deltay, 0.);
+        if check_tile_collision_bomb(target, &collision){
+            transform.translation = target;
+        }else{
+            bomb.grounded = true;
+        }
+    }
+}
+
+fn check_tile_collision_bomb(
+    pos: Vec3,
+    wall_collide: &Query<&Transform, (With<Collider>, Without<Bomb>)>
+) -> bool{
+    for wall in wall_collide.iter(){
+        let collision = collide(
+            pos,
+            Vec2::splat(TILE_SIZE * 0.1),
+            wall.translation,
+            Vec2::splat(TILE_SIZE)
+        );
+        if collision.is_some(){
+            return false;
+        }
+    }    
+    true
+}
 //BOMB_WEAPON/////////////////
 fn load_bomb_sheet(
 	mut commands: Commands,
@@ -704,7 +759,7 @@ fn spawn_bomb(
 		.insert(AnimationTimer(Timer::from_seconds(ANIM_TIME, true)))
 		//.insert(Velocity::new())
 		.insert(Bomb{
-			//grounded: false,
+			grounded: false,
 			y_velocity: 0., //-1.0,
 			x_velocity: 0.,
 		});
